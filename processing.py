@@ -4,62 +4,88 @@ from bs4 import BeautifulSoup
 import csv
 import requests
 import itertools
+from multiprocessing import Pool, Manager
+#output = open("/Users/WeiXing/Desktop/movies_budget.txt", "w")
 
-input = open("/Users/WeiXing/Desktop/movie_budgets.html", "r")
-soup = BeautifulSoup(input)
+#url = "http://www.the-numbers.com/movie/budgets/all"
 
-table = soup.find("table", { "id": "budgets" })
-data = []
+#page = urllib2.urlopen(url)
+data = list()
+titles = list()
+newData = list()
+manager = Manager()
+movieMap = manager.dict()
 
-for row in table.findAll("tr")[1:]:
-	tmpArr = []
-	cells = row.findAll("td")
-	if(not cells):
-		continue
-	
-	tmpArr.append(cells[2].findAll(text=True)[0].encode("utf-8"))
-	tmpArr.append(cells[1].findAll(text=True)[0].encode("utf-8"))
-	tmpArr.append(cells[3].findAll(text=True)[0].encode("utf-8"))
-	tmpArr.append(cells[4].findAll(text=True)[0].encode("utf-8"))
-	tmpArr.append(cells[5].findAll(text=True)[0].encode("utf-8"))
+def generateCSVData(year):
+    for row in table.findAll("tr")[1:]:
+        tmpArr = []
+        cells = row.findAll("td")
+        if(not cells):
+            continue
+        
+        release_date = cells[1].findAll(text=True)[0].encode("utf-8")
+       
+        if(int(release_date.split("/")[2]) != year):
+            continue
 
-	data.append(tmpArr)
-# generate the csv file from the html table of the movie budget website
-with open("/Users/WeiXing/Desktop/movie_budget.csv", "w") as csvfile:
-	csvwriter = csv.writer(csvfile)
-	csvHeader = ["Title", "Release Date", "Budget", "Domestic Gross", "Worldwide Gross"]
-	csvwriter.writerow(csvHeader)
-	csvwriter.writerows(data)
+        title = cells[2].findAll(text=True)[0].encode("utf-8")
+        budget = cells[3].findAll(text=True)[0].encode("utf-8")
+        domestic_gross = cells[4].findAll(text=True)[0].encode("utf-8")
+        worldwide_gross = cells[5].findAll(text=True)[0].encode("utf-8")
 
-# generate the supplementary csv file containing extra information of a given movie
-jsonArr = []
-newcsvHeader = ["Title", "Genre", "Director", "Awards", "imdbRating"]
-with open("/Users/WeiXing/Desktop/movie_budget.csv", "r") as csvfile:
-	csvreader = csv.reader(csvfile)
-	csvheader = next(csvreader)
-	for i in range(100):
-		row = csvreader.next()
-		title = row[0].replace(" ", "+")
-		url = "http://www.omdbapi.com/?t="+title+"&y=&plot=short&r=json"
-		response = requests.get(url).text
-		jsonArr.append(response)
-newData = []
-for item in jsonArr:
-	tmpArr = []
-	respDict = json.loads(item)
-	if("Error" in respDict):
-		print(respDict["Error"])
-		continue
-	else:
-		for field in newcsvHeader:
-			tmpArr.append(respDict[field].encode("utf-8"))
-	newData.append(tmpArr)
+        tmpArr.append(title)
+        tmpArr.append(release_date)
+        tmpArr.append(budget)
+        tmpArr.append(domestic_gross)
+        tmpArr.append(worldwide_gross)
+        
+        titles.append(title)
 
-with open("/Users/WeiXing/Desktop/supplementary_data.csv", "w") as newcsvfile:
-	csvwriter = csv.writer(newcsvfile)
-    csvwriter.writerow(newcsvHeader)
-    csvwriter.writerows(newData)
- 
+        data.append(tmpArr)
+
+
+def apiCall(title):
+    #call api to get supplementary information about the movie
+    tmpArr = []
+    extra_fields = ["Genre", "Director", "Awards", "imdbRating"]
+    url = "http://www.omdbapi.com/?t="+title+"&y=&plot=short&r=json"
+    response = requests.get(url).text
+    respDict = json.loads(response)
+    if("Error" in respDict):
+        print(respDict["Error"])
+        for field in extra_fields:
+            tmpArr.append("None")
+        print("Success!")
+    else:
+        for field in extra_fields:
+            tmpArr.append(respDict[field].encode("utf-8"))
+    movieMap[title] = tmpArr
+
+def writeToCSV(year):
+    for record in data:
+        title = record[0]
+        extraInfo = movieMap[title]
+        newData.append(record+extraInfo)
+
+    with open("/Users/WeiXing/Desktop/movie_budgets/movie_budget_"+str(year)+".csv", "w") as csvfile:
+        csvwriter = csv.writer(csvfile)
+        csvHeader = ["Title", "Release Date", "Budget", "Domestic Gross", "Worldwide Gross", "Genre", "Director", "Awards", "imdbRating"]
+        csvwriter.writerow(csvHeader)
+        csvwriter.writerows(newData)
+
+
+if __name__ == '__main__':
+    input = open("/Users/WeiXing/Desktop/movie_budgets.html", "r")
+    soup = BeautifulSoup(input)
+
+    table = soup.find("table", { "id": "budgets" })
+    generateCSVData(2015)
+    print("The length of titles list is "+str(len(titles)))
+    p = Pool(len(titles))
+    p.map(apiCall, titles)
+    
+    writeToCSV(2015)
+
 
 
           
