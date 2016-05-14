@@ -26,7 +26,7 @@
     .axis text{
         font-size: 6pt;
     }
-    .axis line { stroke: green; }
+    .axis line { stroke: red; }
     .axis path { stroke: blue; fill: none; stroke-width: 2px; }
     .data-point { fill: red; opacity: 0.5; }
 </style>
@@ -175,8 +175,6 @@
    
     function displayDataPoints(data){
         //create the scale for the size of the data points in the scatter plot
-        d3.selectAll(".axis text").remove();
-        d3.selectAll(".axis line").remove();
         var sizeScale = d3.scale.linear()
                 .domain(d3.extent(data, function(d){ return parseFloat(d.imdbRating); }))
                 .range([5, 10]);
