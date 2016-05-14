@@ -1,7 +1,20 @@
 <html>
 <head>
 <script src="http://d3js.org/d3.v3.min.js"></script>
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/semantic-ui/2.1.8/semantic.min.css">
+<!-- jQuery -->
+<script src="//ajax.googleapis.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
+<!-- Latest compiled and minified CSS -->
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css" integrity="sha384-1q8mTJOASx8j1Au+a5WDVnPi2lkFfwwEAa8hDDdjZlpLegxhjVME1fgjWPGmkzs7" crossorigin="anonymous">
+
+<!-- Optional theme -->
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap-theme.min.css" integrity="sha384-fLW2N01lMqjakBkx3l/M9EahuwpSfeNvV63J5ezn3uZzapT0u7EYsXMjQV+0En5r" crossorigin="anonymous">
+
+<!-- Latest compiled and minified JavaScript -->
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js" integrity="sha384-0mSbJDEHialfmuBBQP6A4Qrprq5OVfW37PRR3j5ELqxss1yVqOtnepnHVP9aJ7xS" crossorigin="anonymous"></script>
+<!-- Latest compiled Bootstrap multiselect css -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-multiselect/0.9.13/css/bootstrap-multiselect.css">
+<!-- Latest compiled Bootstrap multiselect javascript -->
+<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-multiselect/0.9.13/js/bootstrap-multiselect.min.js"></script>
 <style>
     .selected {
         fill: orange;
@@ -11,16 +24,16 @@
         margin-left: 50px;
     }
     .axis text{
-        padding-top: 10px;
-        font-size: 1pt;
+        font-size: 7pt;
     }
+    .axis line { stroke: red; }
+    .axis path { stroke: blue; fill: none; stroke-width: 2px;}
 </style>
 </head>
 <body>
 <div>
 	<div>
-	<select id="genre-filter" data-placeholder="Select a genre..." class="ui fluid dropdown" multiple="">
-		<option value=""></option>
+	<select id="genre-filter" multiple="multiple" class="ui fluid search dropdown">
 		<option id="action" value="Action">Action</option>
 		<option id="adventure" value="Adventure">Adventure</option>
 		<option id="animation" value="Animation">Animation</option>
@@ -32,6 +45,16 @@
 		<option id="thriller" value="Thriller">Thriller</option>
 		<option id="documentary" value="Documentary">Documentary</option>
 	</select>
+    <script>
+        $(document).ready(function() {
+            $('#genre-filter').multiselect({
+                //nonSelectedText: 'Please select a genre..'
+                numberDisplayed: 10,
+                nonSelectedText: 'Please select a genre..'
+            });
+        });
+    </script>
+</div>
     </div>
     <div id="scatter-plot"></div>
     <h3>Year</h3>
@@ -54,16 +77,16 @@
     <h3>Rated<h3>
 </div>
 <script>
-    var margin = { top: 20, bottom: 30, left: 40, right: 20 };
+    var margin = { top: 20, bottom: 40, left: 50, right: 20 };
     var width = 1000-margin.left-margin.right;
     var height = 600-margin.top-margin.bottom;
     var options = ["Action", "Adventure", "Animation", "Comedy", "Crime", "Drama", "Horror", "Romance", "Thriller", "Documentary"];
 
-    var x = d3.scale.linear().range([0, width]);
-    var y = d3.scale.linear().range([height, 0]);
+    var x = d3.scale.log().range([0, width]).nice();
+    var y = d3.scale.log().range([height, 0]).nice();
     var colorScale = d3.scale.category10().domain(options);
-    var xAxis = d3.svg.axis().scale(x).orient("bottom");
-    var yAxis = d3.svg.axis().scale(y).orient("left");
+    var xAxis = d3.svg.axis().scale(x).orient("bottom").ticks(10).tickFormat(d3.format("s"));
+    var yAxis = d3.svg.axis().scale(y).orient("left").ticks(10).tickFormat(d3.format("s"));
 
     var svg = d3.select("#scatter-plot").append("svg")
         .attr("width", width+margin.left+margin.right)
@@ -132,7 +155,7 @@
     	//create the scale for the size of the data points in the scatter plot
             var sizeScale = d3.scale.linear()
                 .domain(d3.extent(data, function(d){ return parseFloat(d.imdbRating); }))
-                .range([1, 10]);
+                .range([5, 10]);
             //set the domain of the x and y axis
             x.domain(d3.extent(data, function(d){ return parseInt(d.Budget.substr(1).replace(',', '')); }));
             y.domain(d3.extent(data, function(d){ return parseInt(d["Worldwide Gross"].substr(1).replace(',', '')); }));
@@ -145,7 +168,7 @@
                .append("text")
                .attr("class", "label")
                .attr("x", width)
-               .attr("y", -6)
+               .attr("y", 30)
                .style("text-anchor", "end")
                .text("Budget($)");
 
@@ -155,7 +178,7 @@
                .append("text")
                .attr("class", "label")
                .attr("transform", "rotate(-90)")
-               .attr("y", 6)
+               .attr("y", -36)
                .style("text-anchor", "end")
                .text("Worldwide Gross($)");
 
