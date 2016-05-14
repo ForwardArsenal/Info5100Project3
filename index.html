@@ -1,0 +1,214 @@
+<html>
+<head>
+<script src="http://d3js.org/d3.v3.min.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/semantic-ui/2.1.8/semantic.min.css">
+<style>
+    .selected {
+        fill: orange;
+    }
+    #scatter-plot{
+        margin-top: 100px;
+        margin-left: 50px;
+    }
+    .axis text{
+        padding-top: 10px;
+        font-size: 1pt;
+    }
+</style>
+</head>
+<body>
+<div>
+	<div>
+	<select id="genre-filter" data-placeholder="Select a genre..." class="ui fluid dropdown" multiple="">
+		<option value=""></option>
+		<option id="action" value="Action">Action</option>
+		<option id="adventure" value="Adventure">Adventure</option>
+		<option id="animation" value="Animation">Animation</option>
+		<option id="comedy" value="Comedy">Comedy</option>
+		<option id="crime" value="Crime">Crime</option>
+		<option id="drama" value="Drama">Drama</option>
+		<option id="horror" value="Horror">Horror</option>
+		<option id="romance" value="Romance">Romance</option>
+		<option id="thriller" value="Thriller">Thriller</option>
+		<option id="documentary" value="Documentary">Documentary</option>
+	</select>
+    </div>
+    <div id="scatter-plot"></div>
+    <h3>Year</h3>
+    <div>
+    	<a id="all" class="selected">All</a> |
+    	<a id="2010">2010</a> |
+    	<a id="2011">2011</a> |  
+    	<a id="2012">2012</a> |
+    	<a id="2013">2013</a> |
+    	<a id="2014">2014</a> |
+    	<a id="2015">2015</a>
+    </div>
+    <h3>Top</h3>
+    <div>
+    	<a id="top-5">5</a> |
+    	<a id="top-15">15</a> |
+    	<a id="top-25">25</a> |
+    	<a id="top-50" class="selected">50</a>
+    </div>
+    <h3>Rated<h3>
+</div>
+<script>
+    var margin = { top: 20, bottom: 30, left: 40, right: 20 };
+    var width = 1000-margin.left-margin.right;
+    var height = 600-margin.top-margin.bottom;
+    var options = ["Action", "Adventure", "Animation", "Comedy", "Crime", "Drama", "Horror", "Romance", "Thriller", "Documentary"];
+
+    var x = d3.scale.linear().range([0, width]);
+    var y = d3.scale.linear().range([height, 0]);
+    var colorScale = d3.scale.category10().domain(options);
+    var xAxis = d3.svg.axis().scale(x).orient("bottom");
+    var yAxis = d3.svg.axis().scale(y).orient("left");
+
+    var svg = d3.select("#scatter-plot").append("svg")
+        .attr("width", width+margin.left+margin.right)
+        .attr("height", height+margin.top+margin.bottom)
+        .append("g")
+        .attr("transform", "translate("+margin.left+","+margin.top+")");
+
+    
+    d3.csv("movie_budgets/movie_budget_all.csv", function(error, data){
+        if(error){
+            throw error;
+        }
+        var result = sortDataByRating(data);     
+        var ratedOption = "top50";
+            
+        //display the default data points (no genre is specified, top 50 rated)
+        displayDataPoints(result["top50"]);
+        //register listeners on all the options included in the genre filter
+        d3.select("#action").on("click", handleGenreFilterSelection);
+
+        d3.select("#adventure").on("click", handleGenreFilterSelection);
+
+        d3.select("#animation").on("click", handleGenreFilterSelection);
+
+        d3.select("#comedy").on("click", handleGenreFilterSelection);
+
+        d3.select("#crime").on("click", handleGenreFilterSelection);
+
+        d3.select("#drama").on("click", handleGenreFilterSelection);
+
+        d3.select("#horror").on("click", handleGenreFilterSelection);
+
+        d3.select("#romance").on("click", handleGenreFilterSelection);
+
+        d3.select("#thriller").on("click", handleGenreFilterSelection);
+
+        d3.select("#documentary").on("click", handleGenreFilterSelection);
+
+        //register listeners on all the year options
+        d3.select("[id='2010']").on("click", handleYearSelection);
+
+        d3.select("[id='2011']").on("click", handleYearSelection);
+
+        d3.select("[id='2012']").on("click", handleYearSelection);
+
+        d3.select("[id='2013']").on("click", handleYearSelection);
+
+        d3.select("[id='2014']").on("click", handleYearSelection);
+
+        d3.select("[id='2015']").on("click", handleYearSelection);
+
+        //register listeners on all the rated options   
+        d3.select("#top-5").on("click", handleRatedOption);
+
+        d3.select("#top-15").on("click", handleRatedOption);
+
+        d3.select("#top-25").on("click", handleRatedOption);
+
+        d3.select("#top-50").on("click", handleRatedOption);
+
+            
+
+    });
+   
+    function displayDataPoints(data){
+    	//create the scale for the size of the data points in the scatter plot
+            var sizeScale = d3.scale.linear()
+                .domain(d3.extent(data, function(d){ return parseFloat(d.imdbRating); }))
+                .range([1, 10]);
+            //set the domain of the x and y axis
+            x.domain(d3.extent(data, function(d){ return parseInt(d.Budget.substr(1).replace(',', '')); }));
+            y.domain(d3.extent(data, function(d){ return parseInt(d["Worldwide Gross"].substr(1).replace(',', '')); }));
+            console.log(d3.max(data, function(d){ return parseInt(d["Worldwide Gross"].substr(1).replace(',', ''));}));
+            console.log(d3.min(data, function(d){ return parseInt(d["Worldwide Gross"].substr(1).replace(',', ''));}));
+            svg.append("g")
+               .attr("class", "axis")
+               .attr("transform", "translate(0,"+height+")")
+               .call(xAxis)
+               .append("text")
+               .attr("class", "label")
+               .attr("x", width)
+               .attr("y", -6)
+               .style("text-anchor", "end")
+               .text("Budget($)");
+
+            svg.append("g")
+               .attr("class", "axis")
+               .call(yAxis)
+               .append("text")
+               .attr("class", "label")
+               .attr("transform", "rotate(-90)")
+               .attr("y", 6)
+               .style("text-anchor", "end")
+               .text("Worldwide Gross($)");
+
+            svg.selectAll(".data-point")
+            .data(data)
+            .enter()
+            .append("circle")
+            .attr("class", "data-point")
+            .attr("r", function(d){ return sizeScale(parseFloat(d.imdbRating)); })
+            .attr("cx", function(d){ return x(parseInt(d.Budget.substr(1).replace(',', ''))); })
+            .attr("cy", function(d){ return y(parseInt(d["Worldwide Gross"].substr(1).replace(',', ''))); })
+            .style("fill", "red");
+    }
+    function sortDataByRating(data){
+        data.sort(function(a, b){
+            return parseFloat(a.imdbRating) - parseFloat(b.imdbRating);
+        });
+        var filtered = data.filter(function(d){ 
+            return parseInt(d.Budget.substr(1).replace(',', '')) != 0
+            && parseInt(d["Worldwide Gross"].substr(1).replace(',', '')) !=0; 
+        });
+        return { top5: filtered.slice(0, 6), top15: filtered.slice(0, 16), top25: filtered.slice(0, 26), top50: filtered.slice(0, 51) };
+    }
+    function filterDataByGenre(genre, data){
+        return data.filter(function(d){
+        	return d["Genre"].split(",").includes(genre);
+        });
+    }
+    function handleGenreFilterSelection(){
+    	var sel = d3.select(this);
+        var genre = selection.options[sel.selectedIndex].value;
+        //var inputData = result[ratedOption];
+        var filteredData = filterDataByGenre(genre, data);
+        result = sortDataByRating(filteredData);
+        displayDataPoints(result[ratedOption]);      
+    }
+    function handleYearSelection(){
+    	var year = d3.select(this).text();
+    	var path = "/User/WeiXing/Projects/Info5100Project3/movie_budgets/movie_budget_"+year+".csv";
+    	d3.csv(path, function(error, data){
+    		if(error){
+    			throw error;
+    		}
+    		result = sortDataByRating(data);
+            var inputData = result[ratedOption];
+            displayDataPoints(inputData); 
+    	});
+    }
+    function handleRatedOption(){
+    	ratedOption = d3.select(this).text();
+    	var inputData = result[ratedOption];
+    	displayDataPoints(inputData);
+    }
+</script>
+</body>
+</html>

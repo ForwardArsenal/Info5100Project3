@@ -15,8 +15,10 @@ titles = list()
 newData = list()
 manager = Manager()
 movieMap = manager.dict()
-
+titlesLength = dict()
+titlesContent = dict()
 def generateCSVData(year):
+    tmpTitles = []
     for row in table.findAll("tr")[1:]:
         tmpArr = []
         cells = row.findAll("td")
@@ -24,8 +26,8 @@ def generateCSVData(year):
             continue
         
         release_date = cells[1].findAll(text=True)[0].encode("utf-8")
-       
-        if(int(release_date.split("/")[2]) != year):
+
+        if(year is not None and int(release_date.split("/")[2]) != year):
             continue
 
         title = cells[2].findAll(text=True)[0].encode("utf-8")
@@ -40,8 +42,10 @@ def generateCSVData(year):
         tmpArr.append(worldwide_gross)
         
         titles.append(title)
-
+        tmpTitles.append(title)
         data.append(tmpArr)
+
+    return tmpTitles
 
 
 def apiCall(title):
@@ -67,24 +71,44 @@ def writeToCSV(year):
         extraInfo = movieMap[title]
         newData.append(record+extraInfo)
 
-    with open("/Users/WeiXing/Desktop/movie_budgets/movie_budget_"+str(year)+".csv", "w") as csvfile:
-        csvwriter = csv.writer(csvfile)
-        csvHeader = ["Title", "Release Date", "Budget", "Domestic Gross", "Worldwide Gross", "Genre", "Director", "Awards", "imdbRating"]
-        csvwriter.writerow(csvHeader)
-        csvwriter.writerows(newData)
+
+    csvHeader = ["Title", "Release Date", "Budget", "Domestic Gross", "Worldwide Gross", "Genre", "Director", "Awards", "imdbRating"]
+    if year is not None:
+        with open("/Users/WeiXing/Projects/Info5100Project3/movie_budgets/movie_budget_"+str(year)+".csv", "w") as csvfile:
+            csvwriter = csv.writer(csvfile)
+            csvwriter.writerow(csvHeader)
+            csvwriter.writerows(newData)
+    else:
+        with open("/Users/WeiXing/Projects/Info5100Project3/movie_budgets/movie_budget_all.csv", "w") as csvfile:
+            csvwriter = csv.writer(csvfile)
+            csvwriter.writerow(csvHeader)
+            csvwriter.writerows(newData)
+
+def generateAll():
+    for year in range(2010, 2016):
+        tmpTitles = generateCSVData(year)
+        print("The length is "+str(len(tmpTitles)))
+        p = Pool(len(tmpTitles))
+        p.map(apiCall, tmpTitles)
+        p.terminate()
+        
+    writeToCSV(None)
 
 
 if __name__ == '__main__':
-    input = open("/Users/WeiXing/Desktop/movie_budgets.html", "r")
+    input = open("/Users/WeiXing/Projects/Info5100Project3/movie_budgets.html", "r")
     soup = BeautifulSoup(input)
 
     table = soup.find("table", { "id": "budgets" })
-    generateCSVData(2015)
-    print("The length of titles list is "+str(len(titles)))
-    p = Pool(len(titles))
-    p.map(apiCall, titles)
-    
-    writeToCSV(2015)
+    '''
+    for year in range(2010, 2016):
+        generateCSVData(year)
+        print("The length of titles list is "+str(len(titles)))
+        p = Pool(len(titles))
+        p.map(apiCall, titles)
+        writeToCSV(year)
+    '''
+    generateAll()
 
 
 
