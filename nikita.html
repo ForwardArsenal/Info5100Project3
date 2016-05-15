@@ -181,7 +181,7 @@
             if(chosenGenre == "All") {
             svg.selectAll(".point").data([]).exit().remove();
 
-                 displayDataPoints(initialData["top50"]);  
+                 displayDataPoints(initialData[ratedOption]);  
             return;
             }
             var filteredData = filterDataByGenre(genre, yearArray);
