@@ -1,11 +1,24 @@
 <html>
 <head>
 <script src="http://d3js.org/d3.v3.min.js"></script>
+<script src="http://code.jquery.com/jquery-1.11.0.min.js"></script>
+
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/semantic-ui/2.1.8/semantic.min.css">
 <style>
         body { font-family: "Open Sans"; margin: 40px;}
 
-
+        .row {
+  width: 100%;
+  margin: 0 auto;
+}
+.block1 {
+  width: 550px;
+  float: left
+}
+.block2 {
+  width: 550px;
+  float: right
+}
         #display-el {
   display:none;
   visibility: hidden;
@@ -13,10 +26,11 @@
 </style>
 </head>
 <body>
+<h1> Showing imdb rated <span id="span1"></span> movies of  <span id="span2"></span> , for  <span id="span3"> </span>  </h1>
 <br>
 <div> 
     <select id="select-el" onchange="handleGenreFilterSelection(this.value)" >
-        <option value="Empty"></option>
+        <option value="All">Filter by Genre</option>
         <option id="action" value="Action">Action</option>
         <option id="adventure" value="Adventure">Adventure</option>
         <option id="animation" value="Animation">Animation</option>
@@ -31,6 +45,8 @@
     </div>
 
     <div id="scatter-plot"></div>
+    <div class = "row" id = "group">
+    <div class = "block1">
     <h3>Year</h3>
 
         <input  type="radio"  id="All" value="All" name = "year" checked="checked" onClick = "handleYearSelection(this.id)"> All
@@ -38,8 +54,20 @@
         <input type="radio"  id="2011" value="2011" name = "year" onClick = "handleYearSelection(this.id)"> 2011
         <input  type="radio" id="2012" value="2012" name = "year" onClick = "handleYearSelection(this.id)"> 2012
         <input  type="radio"  id="2013" value="2013" name = "year" onClick = "handleYearSelection(this.id)"> 2013
+    </div>
+    <div class = "block2">
 
+    <h3>Top Ratings</h3>
+
+        <input  type="radio"  id="top5" value="Top-5" name = "rate"  onClick = "handleRating(this.id, this.value)"> Top-5
+        <input type="radio"  id="top15" value="Top-15" name = "rate" onClick = "handleRating(this.id, this.value)"> Top-15
+        <input  type="radio" id="top25" value="Top-25" name = "rate" onClick = "handleRating(this.id, this.value)"> Top-25
+        <input  type="radio"  id="top50" value="Top-50" name = "rate" checked="checked" onClick = "handleRating(this.id, this.value)"> Top-50
+    </div>
+    </div>
     <script>
+
+
     var margin = { top: 20, bottom: 30, left: 40, right: 20 };
     var width = 1000;
     var height = 600;
@@ -50,8 +78,9 @@
     var yScale; 
     var colorScale = d3.scale.category10();
     var ratedOption = "top50";
-    var chosenGenre = "Empty";
+    var chosenGenre = "All";
     var chosenYear = "All";
+    var chosenRate = "Top-50"
     var yearArray;
     var result=[]; var xDomain; var yDomain;
     var initialData;
@@ -83,49 +112,8 @@
             return parseInt(d.Budget.substr(1).replace(',', '')) != 0
             && parseInt(d["Worldwide Gross"].substr(1).replace(',', '')) !=0; 
         });
-        var maxTop5 = 5, maxTop15 = 15, maxTop25 = 25, maxTop50 = 50, maxTop500 = 500;
-        if(values.length < 5) {
-            maxTop5 = values.length-1;
-            maxTop15 = maxTop5;
-            maxTop25 = maxTop5;
-            maxTop50 = maxTop5;
-            maxTop500 = maxTop5;
-        }
-        else if(values.length < 15) {
-            maxTop5 = 5;
-            maxTop15 = values.length-1;
-            maxTop25 = maxTop15;
-            maxTop50 = maxTop15;
-            maxTop500 = maxTop15;
-        }
-        else if(values.length < 15) {
-            maxTop5 = 5;
-            maxTop15 = values.length-1;
-            maxTop25 = maxTop15;
-            maxTop50 = maxTop15;
-            maxTop500 = maxTop15;
-        }
-        else if(values.length < 25) {
-            maxTop5 = 5;
-            maxTop15 = 15;
-            maxTop25 = values.length-1;
-            maxTop50 = maxTop25;
-            maxTop500 = maxTop25;
-        }else if(values.length < 50) {
-            maxTop5 = 5;
-            maxTop15 = 15;
-            maxTop25 = 25;
-            maxTop50 = values.length-1;
-            maxTop500 = values.length-1;
-        }
-        else if(values.length < 500) {
-            maxTop5 = 5;
-            maxTop15 = 15;
-            maxTop25 = 25;
-            maxTop50 = 50;
-            maxTop500 = values.length-1;
-        }
-        return { top5: filtered.slice(0, maxTop5), top15: filtered.slice(0, maxTop15), top25: filtered.slice(0, maxTop25), top50: filtered.slice(0, maxTop50), top500: filtered.slice(0,maxTop500) };
+        
+        return { top5: filtered.slice(0, 5), top15: filtered.slice(0, 15), top25: filtered.slice(0, 25), top50: filtered.slice(0, 50), top500: filtered.slice(0,values.length-1) };
     }
 
 
@@ -140,7 +128,7 @@
         yScale = d3.scale.log().domain(yDomain).range([height, 0]);
             var sizeScale = d3.scale.linear()
                 .domain(d3.extent(data, function(d){ return parseFloat(d.imdbRating); }))
-                .range([1, 10]);
+                .range([5, 14]);
         var xAxis = d3.svg.axis().scale(xScale).orient("bottom");
         var yAxis = d3.svg.axis().scale(yScale).orient("left");
             //set the domain of the x and y axis
@@ -175,6 +163,7 @@
             .attr("cx", function(d){ return xScale(parseInt(d.Budget.substr(1).replace(',', ''))); })
             .attr("cy", function(d){ return yScale(parseInt(d["Worldwide Gross"].substr(1).replace(',', ''))); })
             .style("fill", function(d) { return colorScale(((d.Genre).split(","))[0]); } )
+            .style("stroke", "black")
             .style("opacity", 0.9);
     }
 
@@ -186,12 +175,12 @@
 
     function handleGenreFilterSelection(genre){
         chosenGenre = genre;
-        console.log(genre);
+        document.getElementById('span2').innerHTML="<font color='red'>"+chosenGenre +"</font>" +  " genre";
+
         if(chosenYear != "All") {
-            console.log("chosen year is not all"+genre);
-            if(chosenGenre == "Empty") {
+            if(chosenGenre == "All") {
             svg.selectAll(".point").data([]).exit().remove();
-                
+
                  displayDataPoints(initialData["top50"]);  
             return;
             }
@@ -204,9 +193,10 @@
         }
         var inputData = initialData["top500"];
     
-        if(genre == "Empty") {
-            console.log("In genre Empy");
-            displayDataPoints(initialData["top50"]);  
+        if(genre == "All") {
+                    svg.selectAll(".point").data([]).exit().remove();
+
+            displayDataPoints(initialData[ratedOption]);  
             return;
         }
 
@@ -226,8 +216,9 @@
 
     function handleYearSelection(value){
         chosenYear = value;
+                document.getElementById('span3').innerHTML="<font color='red'>"+chosenYear +"</font>"+ " Year";
+
         var path = "movie_budgets/movie_budget_" + value + ".csv";
-        console.log(path);
         d3.csv(path, function(error, data){
             if(error){
                 throw error;
@@ -239,22 +230,30 @@
             var yData = yearData[ratedOption];
             svg.selectAll(".point").data([]).exit().remove();
 
-            if(chosenGenre=="Empty"){
-            console.log("Inside if" +chosenGenre);
+            if(chosenGenre=="All"){
 
                 displayDataPoints(yData);
                 return; 
 
             }
-            console.log(chosenGenre);
             yData = yearData["top500"];
             yearArray = yData;
             yData = filterDataByGenre(chosenGenre, yData);
-
             displayDataPoints(yData); 
         });
     }
 
+    function handleRating(id, value) {
+        ratedOption = id;
+        chosenRate = value;
+        document.getElementById('span1').innerHTML="<font color='red'>" + chosenRate + "</font>";
+        handleGenreFilterSelection(chosenGenre);
+
+    }
+
+document.getElementById('span3').innerHTML="<font color='red'>"+"all" + "</font>" + " years";
+document.getElementById('span2').innerHTML="<font color='red'>"+"all" + "</font>" + " genres";
+document.getElementById('span1').innerHTML="<font color='red'>" + chosenRate + "</font>";
 
 </script>
 </body>
