@@ -1,0 +1,250 @@
+<html>
+<head>
+<script src="http://d3js.org/d3.v3.min.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/semantic-ui/2.1.8/semantic.min.css">
+<style>
+        body { font-family: "Open Sans"; margin: 40px;}
+
+
+        #display-el {
+  display:none;
+  visibility: hidden;
+}
+</style>
+</head>
+<body>
+<br>
+<div> 
+    <select id="select-el" onchange="handleGenreFilterSelection(this.value)" >
+        <option value="Empty"></option>
+        <option id="action" value="Action">Action</option>
+        <option id="adventure" value="Adventure">Adventure</option>
+        <option id="animation" value="Animation">Animation</option>
+        <option id="comedy" value="Comedy">Comedy</option>
+        <option id="crime" value="Crime">Crime</option>
+        <option id="drama" value="Drama">Drama</option>
+        <option id="horror" value="Horror">Horror</option>
+        <option id="romance" value="Romance">Romance</option>
+        <option id="thriller" value="Thriller">Thriller</option>
+        <option id="documentary" value="Documentary">Documentary</option>
+    </select>
+    </div>
+
+    <div id="scatter-plot"></div>
+    <h3>Year</h3>
+
+        <input  type="radio"  id="2010" value="All" name = "year" checked="checked" onClick = "handleYearSelection(this.id)"> All
+        <input type="radio" id="2010" value="2010" name = "year" onClick = "handleYearSelection(this.id)"> 2010
+        <input type="radio"  id="2011" value="2011" name = "year" onClick = "handleYearSelection(this.id)"> 2011
+        <input  type="radio" id="2012" value="2012" name = "year" onClick = "handleYearSelection(this.id)"> 2012
+        <input  type="radio"  id="2013" value="2013" name = "year" onClick = "handleYearSelection(this.id)"> 2013
+
+    <script>
+    var margin = { top: 20, bottom: 30, left: 40, right: 20 };
+    var width = 1000;
+    var height = 600;
+    padding = 70;
+    var options = ["Action", "Adventure", "Animation", "Comedy", "Crime", "Drama", "Horror", "Romance", "Thriller", "Documentary"];
+
+    var xScale; 
+    var yScale; 
+    var colorScale = d3.scale.category10().domain(options);
+    var ratedOption = "top50";
+    var chosenGenre = "Empty";
+    var chosenYear = "All";
+    var yearArray;
+    var result=[]; var xDomain; var yDomain;
+    var initialData;
+    d3.csv("movie_budgets/movie_budget_all.csv", function(error, data){
+        if(error){
+            throw error;
+        }
+        data = data.filter(function(d) {return (d.imdbRating != "N/A" && d.imdbRating != "None");});
+        result = sortDataByRating(data);   
+        initialData = sortDataByRating(data);  
+        var ratedOption = "top50";
+        xDomain = d3.extent(initialData[ratedOption], function(d){ return parseInt(d.Budget.substr(1).replace(',', '')); })
+        yDomain = d3.extent(initialData[ratedOption], function(d){ return parseInt(d["Worldwide Gross"].substr(1).replace(',', '')); });
+                displayDataPoints(initialData[ratedOption]);
+
+
+    });
+    var svg = d3.select("#scatter-plot").append("svg")
+        .attr("width", width+margin.left+margin.right)
+        .attr("height", height+margin.top+margin.bottom)
+        .append("g")
+        .attr("transform", "translate("+margin.left+","+margin.top+")");
+
+    function sortDataByRating(values){
+        values.sort(function(a, b){
+            return parseFloat(a.imdbRating) - parseFloat(b.imdbRating);
+        });
+        var filtered = values.filter(function(d){ 
+            return parseInt(d.Budget.substr(1).replace(',', '')) != 0
+            && parseInt(d["Worldwide Gross"].substr(1).replace(',', '')) !=0; 
+        });
+        var maxTop5 = 5, maxTop15 = 15, maxTop25 = 25, maxTop50 = 50, maxTop500 = 500;
+        if(values.length < 5) {
+            maxTop5 = values.length-1;
+            maxTop15 = maxTop5;
+            maxTop25 = maxTop5;
+            maxTop50 = maxTop5;
+            maxTop500 = maxTop5;
+        }
+        else if(values.length < 15) {
+            maxTop5 = 5;
+            maxTop15 = values.length-1;
+            maxTop25 = maxTop15;
+            maxTop50 = maxTop15;
+            maxTop500 = maxTop15;
+        }
+        else if(values.length < 15) {
+            maxTop5 = 5;
+            maxTop15 = values.length-1;
+            maxTop25 = maxTop15;
+            maxTop50 = maxTop15;
+            maxTop500 = maxTop15;
+        }
+        else if(values.length < 25) {
+            maxTop5 = 5;
+            maxTop15 = 15;
+            maxTop25 = values.length-1;
+            maxTop50 = maxTop25;
+            maxTop500 = maxTop25;
+        }else if(values.length < 50) {
+            maxTop5 = 5;
+            maxTop15 = 15;
+            maxTop25 = 25;
+            maxTop50 = values.length-1;
+            maxTop500 = values.length-1;
+        }
+        else if(values.length < 500) {
+            maxTop5 = 5;
+            maxTop15 = 15;
+            maxTop25 = 25;
+            maxTop50 = 50;
+            maxTop500 = values.length-1;
+        }
+        return { top5: filtered.slice(0, maxTop5), top15: filtered.slice(0, maxTop15), top25: filtered.slice(0, maxTop25), top50: filtered.slice(0, maxTop50), top500: filtered.slice(0,maxTop500) };
+    }
+
+
+
+
+
+
+     function displayDataPoints(data){
+        //create the scale for the size of the data points in the scatter plot
+        
+        xScale = d3.scale.log().domain(xDomain).range([0, (width )]);
+        yScale = d3.scale.log().domain(yDomain).range([height, 0]);
+            var sizeScale = d3.scale.linear()
+                .domain(d3.extent(data, function(d){ return parseFloat(d.imdbRating); }))
+                .range([1, 10]);
+        var xAxis = d3.svg.axis().scale(xScale).orient("bottom");
+        var yAxis = d3.svg.axis().scale(yScale).orient("left");
+            //set the domain of the x and y axis
+            
+            svg.append("g")
+               .attr("class", "axis")
+               .attr("transform", "translate(0,"+height+")")
+               .call(xAxis)
+               .append("text")
+               .attr("class", "label")
+               .attr("x", width)
+               .attr("y", -6)
+               .style("text-anchor", "end")
+               .text("Budget($)");
+
+            svg.append("g")
+               .attr("class", "axis")
+               .call(yAxis)
+               .append("text")
+               .attr("class", "label")
+               .attr("transform", "rotate(-90)")
+               .attr("y", 6)
+               .style("text-anchor", "end")
+               .text("Worldwide Gross($)");
+
+            svg.selectAll(".point")
+            .data(data)
+            .enter()
+            .append("circle")
+            .attr("class", "point")
+            .attr("r", function(d){ console.log(d.imdbRating); return sizeScale(parseFloat(d.imdbRating)); })
+            .attr("cx", function(d){ return xScale(parseInt(d.Budget.substr(1).replace(',', ''))); })
+            .attr("cy", function(d){ return yScale(parseInt(d["Worldwide Gross"].substr(1).replace(',', ''))); })
+            .style("fill", function(d) { return colorScale(d.Genre) } )
+            .style("opacity", 0.9);
+    }
+
+    function filterDataByGenre(genre, data){
+        return data.filter(function(d){
+            return (d.Genre).split(",").includes(genre);
+        });
+    }
+
+    function handleGenreFilterSelection(genre){
+        if(chosenYear != "All") {
+            var filteredData = filterDataByGenre(genre, yearArray);
+            var sData = sortDataByRating(filteredData);
+            svg.selectAll(".point").data([]).exit().remove();
+
+        displayDataPoints(sData[ratedOption])
+            return;
+        }
+        var inputData = initialData["top500"];
+    
+        if(genre == "Empty") {
+            displayDataPoints(initialData["top50"]);  
+            return;
+        }
+        chosenGenre = genre;
+
+        var filteredData = filterDataByGenre(genre, inputData);
+        var sortedData = sortDataByRating(filteredData);
+            svg.selectAll(".point").data([]).exit().remove();
+
+        displayDataPoints(sortedData[ratedOption]);      
+    }
+
+
+
+    function clickOnYear(value) {
+
+    }
+
+
+    function handleYearSelection(value){
+        console.log(value);
+        chosenYear = value;
+        var path = "movie_budgets/movie_budget_" + value + ".csv";
+        console.log(path);
+        d3.csv(path, function(error, data){
+            if(error){
+                throw error;
+            }
+            data = data.filter(function(d) {return (d.imdbRating != "N/A" && d.imdbRating != "None");});
+
+           var yearData = sortDataByRating(data);
+           yearArray = data;
+            var yData = yearData[ratedOption];
+            svg.selectAll(".point").data([]).exit().remove();
+
+            if(chosenGenre=="Empty"){
+                displayDataPoints(yData);
+                return; 
+
+            }
+            yData = yearData["top500"];
+            yearArray = yData;
+            yData = filterDataByGenre(chosenGenre, yData);
+
+            displayDataPoints(yData); 
+        });
+    }
+
+
+</script>
+</body>
+</html>
