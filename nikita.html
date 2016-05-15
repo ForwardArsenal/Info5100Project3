@@ -48,7 +48,7 @@
 
     var xScale; 
     var yScale; 
-    var colorScale = d3.scale.category10().domain(options);
+    var colorScale = d3.scale.category10();
     var ratedOption = "top50";
     var chosenGenre = "Empty";
     var chosenYear = "All";
@@ -174,7 +174,7 @@
             .attr("r", function(d){ console.log(d.imdbRating); return sizeScale(parseFloat(d.imdbRating)); })
             .attr("cx", function(d){ return xScale(parseInt(d.Budget.substr(1).replace(',', ''))); })
             .attr("cy", function(d){ return yScale(parseInt(d["Worldwide Gross"].substr(1).replace(',', ''))); })
-            .style("fill", function(d) { return colorScale(d.Genre) } )
+            .style("fill", function(d) { return colorScale(((d.Genre).split(","))[0]); } )
             .style("opacity", 0.9);
     }
 
