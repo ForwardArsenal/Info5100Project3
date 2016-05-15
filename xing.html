@@ -48,21 +48,25 @@
         <option id="documentary" value="Documentary">Documentary</option>
     </select>
     <script>
+        var checkedGenres = [];
         $(document).ready(function() {
             $('#genre-filter').multiselect({
                 //nonSelectedText: 'Please select a genre..'
                 numberDisplayed: 10,
                 nonSelectedText: 'Please select a genre..',
                 onChange: function(option, checked, select){
+                    var genre = $(option).val();
                     if(checked == true){
-                        console.log("Clicked!");
-                        var genre = $(option).val();
-                        console.log("The selected genre is "+genre);
-                        //var inputData = result[ratedOption];
-                        var filteredData = filterDataByGenre(genre, data);
-                        var result = sortDataByRating(filteredData);
-                        displayDataPoints(result[ratedOption]); 
+                        checkedGenres.push(genre); 
                     }
+                    else{
+                        var index = checkedGenres.indexOf(genre);
+                        if(index != -1){
+                            checkedGenres.splice(index, 1);
+                        }
+                    }
+                    var updated = updateDataPoints(checkedGenres, data);
+                    displayDataPoints(updated); 
                 }
             });
         });
@@ -172,11 +176,16 @@
             
 
     });
-   
+    function updateDataPoints(checkedGenres, data){
+        var filtered = filterDataByGenre(checkedGenres, data);
+        var sorted = sortDataByRating(filtered);
+        return sorted[ratedOption];
+    }
     function displayDataPoints(data){
         //create the scale for the size of the data points in the scatter plot
         d3.selectAll(".axis text").remove();
         d3.selectAll(".axis line").remove();
+        d3.selectAll(".data-point").remove();
         var sizeScale = d3.scale.linear()
                 .domain(d3.extent(data, function(d){ return parseFloat(d.imdbRating); }))
                 .range([5, 10]);
@@ -214,7 +223,6 @@
             .style("text-anchor", "end")
             .text("Worldwide Gross($)");
 
-        d3.selectAll(".data-point").remove();
         //create the starting point for the transition animation of data points
         var dataPoints = svg.selectAll(".data-point").data(data)
             .enter()
@@ -242,9 +250,17 @@
         });
         return { top5: filtered.slice(0, 6), top15: filtered.slice(0, 16), top25: filtered.slice(0, 26), top50: filtered.slice(0, 51) };
     }
-    function filterDataByGenre(genre, data){   
+    function filterDataByGenre(genres, data){ 
+        var num = genres.length;  
         return data.filter(function(d){
-            return d["Genre"].split(",").indexOf(genre) != -1;
+            var counter = 0;
+            var tokens = d["Genre"].split(",");
+            genres.forEach(function(g){
+                if(tokens.indexOf(g) != -1){
+                    counter++;
+                }
+            });
+            return counter == num;
         });
     }
     function handleGenreFilterSelection(){

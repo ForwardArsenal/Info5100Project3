@@ -69,6 +69,8 @@ def writeToCSV(year):
     for record in data:
         title = record[0]
         extraInfo = movieMap[title]
+        if(extraInfo[3] == "None" or extraInfo[3] == "N/A"):
+            continue
         newData.append(record+extraInfo)
 
 
