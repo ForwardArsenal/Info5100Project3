@@ -1,0 +1,296 @@
+<html>
+<head>
+<script src="http://d3js.org/d3.v3.min.js"></script>
+<!-- jQuery -->
+<script src="//ajax.googleapis.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
+<!-- Latest compiled and minified CSS -->
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css" integrity="sha384-1q8mTJOASx8j1Au+a5WDVnPi2lkFfwwEAa8hDDdjZlpLegxhjVME1fgjWPGmkzs7" crossorigin="anonymous">
+
+<!-- Optional theme -->
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap-theme.min.css" integrity="sha384-fLW2N01lMqjakBkx3l/M9EahuwpSfeNvV63J5ezn3uZzapT0u7EYsXMjQV+0En5r" crossorigin="anonymous">
+
+<!-- Latest compiled and minified JavaScript -->
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js" integrity="sha384-0mSbJDEHialfmuBBQP6A4Qrprq5OVfW37PRR3j5ELqxss1yVqOtnepnHVP9aJ7xS" crossorigin="anonymous"></script>
+<!-- Latest compiled Bootstrap multiselect css -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-multiselect/0.9.13/css/bootstrap-multiselect.css">
+<!-- Latest compiled Bootstrap multiselect javascript -->
+<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-multiselect/0.9.13/js/bootstrap-multiselect.min.js"></script>
+<style>
+    .selected {
+        fill: orange;
+    }
+    #scatter-plot{
+        margin-top: 100px;
+        margin-left: 50px;
+    }
+    .axis text{
+        font-size: 6pt;
+    }
+    .axis line { stroke: green; }
+    .axis path { stroke: blue; fill: none; stroke-width: 2px; }
+    .data-point { fill: red; opacity: 0.5; }
+</style>
+</head>
+<body>
+<div>
+    <div>
+    <!--class="ui fluid search dropdown" -->
+    <select id="genre-filter" multiple="multiple">
+        <option id="action" value="Action">Action</option>
+        <option id="adventure" value="Adventure">Adventure</option>
+        <option id="animation" value="Animation">Animation</option>
+        <option id="comedy" value="Comedy">Comedy</option>
+        <option id="crime" value="Crime">Crime</option>
+        <option id="drama" value="Drama">Drama</option>
+        <option id="horror" value="Horror">Horror</option>
+        <option id="romance" value="Romance">Romance</option>
+        <option id="thriller" value="Thriller">Thriller</option>
+        <option id="documentary" value="Documentary">Documentary</option>
+    </select>
+    <script>
+        var checkedGenres = [];
+        $(document).ready(function() {
+            $('#genre-filter').multiselect({
+                //nonSelectedText: 'Please select a genre..'
+                numberDisplayed: 10,
+                nonSelectedText: 'Please select a genre..',
+                onChange: function(option, checked, select){
+                    var genre = $(option).val();
+                    if(checked == true){
+                        checkedGenres.push(genre); 
+                    }
+                    else{
+                        var index = checkedGenres.indexOf(genre);
+                        if(index != -1){
+                            checkedGenres.splice(index, 1);
+                        }
+                    }
+                    var updated = updateDataPoints(checkedGenres, data);
+                    displayDataPoints(updated); 
+                }
+            });
+        });
+    </script>
+</div>
+    </div>
+    <div id="scatter-plot"></div>
+    <h3>Year</h3>
+    <div>
+        <a id="all" class="selected">All</a> |
+        <a id="2010">2010</a> |
+        <a id="2011">2011</a> |  
+        <a id="2012">2012</a> |
+        <a id="2013">2013</a> |
+        <a id="2014">2014</a> |
+        <a id="2015">2015</a>
+    </div>
+    <h3>Top</h3>
+    <div>
+        <a id="top-5">5</a> |
+        <a id="top-15">15</a> |
+        <a id="top-25">25</a> |
+        <a id="top-50" class="selected">50</a>
+    </div>
+    <h3>Rated<h3>
+</div>
+<script>
+    var margin = { top: 20, bottom: 40, left: 50, right: 20 };
+    var width = 1000-margin.left-margin.right;
+    var height = 600-margin.top-margin.bottom;
+    var options = ["Action", "Adventure", "Animation", "Comedy", "Crime", "Drama", "Horror", "Romance", "Thriller", "Documentary"];
+
+    var x = d3.scale.log().range([0, width]).nice();
+    var y = d3.scale.log().range([height, 0]).nice();
+    var colorScale = d3.scale.category10().domain(options);
+    var xAxis = d3.svg.axis().scale(x).orient("bottom").tickFormat(d3.format("s"));
+    var yAxis = d3.svg.axis().scale(y).orient("left").ticks(10).tickFormat(d3.format("s"));
+
+    var svg = d3.select("#scatter-plot").append("svg")
+        .attr("width", width+margin.left+margin.right)
+        .attr("height", height+margin.top+margin.bottom)
+        .append("g")
+        .attr("transform", "translate("+margin.left+","+margin.top+")");
+    var data;
+    var ratedOption = "top50";
+    
+    d3.csv("movie_budgets/movie_budget_all.csv", function(error, records){
+        if(error){
+            throw error;
+        }
+        data = records;
+        var sorted = sortDataByRating(data);     
+            
+        //display the default data points (no genre is specified, top 50 rated)
+        var inputData = sorted[ratedOption];
+        /*
+        dataPoints = svg.selectAll("data-point").data(inputData)
+        .enter()
+        .append("circle")
+        .attr("class", "data-point");
+        */
+
+        displayDataPoints(inputData);
+        //register listeners on all the options included in the genre filter
+        d3.select("#action").on("click", handleGenreFilterSelection);
+
+        d3.select("#adventure").on("click", handleGenreFilterSelection);
+
+        d3.select("#animation").on("click", handleGenreFilterSelection);
+
+        d3.select("#comedy").on("click", handleGenreFilterSelection);
+
+        d3.select("#crime").on("click", handleGenreFilterSelection);
+
+        d3.select("#drama").on("click", handleGenreFilterSelection);
+
+        d3.select("#horror").on("click", handleGenreFilterSelection);
+
+        d3.select("#romance").on("click", handleGenreFilterSelection);
+
+        d3.select("#thriller").on("click", handleGenreFilterSelection);
+
+        d3.select("#documentary").on("click", handleGenreFilterSelection);
+
+        //register listeners on all the year options
+        d3.select("[id='2010']").on("click", handleYearSelection);
+
+        d3.select("[id='2011']").on("click", handleYearSelection);
+
+        d3.select("[id='2012']").on("click", handleYearSelection);
+
+        d3.select("[id='2013']").on("click", handleYearSelection);
+
+        d3.select("[id='2014']").on("click", handleYearSelection);
+
+        d3.select("[id='2015']").on("click", handleYearSelection);
+
+        //register listeners on all the rated options   
+        d3.select("#top-5").on("click", handleRatedOption);
+
+        d3.select("#top-15").on("click", handleRatedOption);
+
+        d3.select("#top-25").on("click", handleRatedOption);
+
+        d3.select("#top-50").on("click", handleRatedOption);
+
+            
+
+    });
+    function updateDataPoints(checkedGenres, data){
+        var filtered = filterDataByGenre(checkedGenres, data);
+        var sorted = sortDataByRating(filtered);
+        return sorted[ratedOption];
+    }
+    function displayDataPoints(data){
+        //create the scale for the size of the data points in the scatter plot
+        d3.selectAll(".axis text").remove();
+        d3.selectAll(".axis line").remove();
+        d3.selectAll(".data-point").remove();
+        var sizeScale = d3.scale.linear()
+                .domain(d3.extent(data, function(d){ return parseFloat(d.imdbRating); }))
+                .range([5, 10]);
+        //set the domain of the x and y axis
+        var xMin = d3.min(data, function(d){ return parseInt(d.Budget.substr(1).replace(',', '')); });
+        var xMax = d3.max(data, function(d){ return parseInt(d.Budget.substr(1).replace(',', '')); });
+        var yMin = d3.min(data, function(d){ return parseInt(d["Worldwide Gross"].substr(1).replace(',', ''));});
+        var yMax = d3.max(data, function(d){ return parseInt(d["Worldwide Gross"].substr(1).replace(',', ''));});
+        var incrementX = parseInt(xMin/5);
+        var incrementY = parseInt(yMin/5);
+        //x.domain(d3.extent(data, function(d){ return parseInt(d.Budget.substr(1).replace(',', '')); }));
+        x.domain([xMin-incrementX, xMax]);
+        //y.domain(d3.extent(data, function(d){ return parseInt(d["Worldwide Gross"].substr(1).replace(',', '')); }));
+        y.domain([yMin-incrementY, yMax]);
+        //console.log(d3.max(data, function(d){ return parseInt(d["Worldwide Gross"].substr(1).replace(',', ''));}));
+        //console.log(d3.min(data, function(d){ return parseInt(d["Worldwide Gross"].substr(1).replace(',', ''));}));
+        svg.append("g")
+            .attr("class", "axis")
+            .attr("transform", "translate(0,"+height+")")
+            .call(xAxis)
+            .append("text")
+            .attr("class", "label")
+            .attr("x", width)
+            .attr("y", 30)
+            .style("text-anchor", "end")
+            .text("Budget($)");
+
+        svg.append("g")
+            .attr("class", "axis")
+            .call(yAxis)
+            .append("text")
+            .attr("class", "label")
+            .attr("transform", "rotate(-90)")
+            .attr("y", -36)
+            .style("text-anchor", "end")
+            .text("Worldwide Gross($)");
+
+        //create the starting point for the transition animation of data points
+        var dataPoints = svg.selectAll(".data-point").data(data)
+            .enter()
+            .append("circle")
+            .attr("class", "data-point")
+            .attr("r", function(d){ return sizeScale(parseFloat(d.imdbRating)); })
+            .attr("cx", x(xMin-incrementX))
+            .attr("cy", y(yMin-incrementY));
+
+        dataPoints.transition()
+        .duration(1000)
+        .attr("cx", function(d){ return x(parseInt(d.Budget.substr(1).replace(',', ''))); })
+        .attr("cy", function(d){ return y(parseInt(d["Worldwide Gross"].substr(1).replace(',', ''))); });
+
+
+            
+    }
+    function sortDataByRating(data){
+        data.sort(function(a, b){
+            return parseFloat(a.imdbRating) - parseFloat(b.imdbRating);
+        });
+        var filtered = data.filter(function(d){ 
+            return parseInt(d.Budget.substr(1).replace(',', '')) != 0
+            && parseInt(d["Worldwide Gross"].substr(1).replace(',', '')) !=0; 
+        });
+        return { top5: filtered.slice(0, 6), top15: filtered.slice(0, 16), top25: filtered.slice(0, 26), top50: filtered.slice(0, 51) };
+    }
+    function filterDataByGenre(genres, data){ 
+        var num = genres.length;  
+        return data.filter(function(d){
+            var counter = 0;
+            var tokens = d["Genre"].split(",");
+            genres.forEach(function(g){
+                if(tokens.indexOf(g) != -1){
+                    counter++;
+                }
+            });
+            return counter == num;
+        });
+    }
+    function handleGenreFilterSelection(){
+        //var sel = d3.select(this);
+        //var genre = selection.options[sel.selectedIndex].value;
+        console.log("Clicked!");
+        var genre = d3.select(this).property("value");
+        console.log("The selected genre is "+genre);
+        //var inputData = result[ratedOption];
+        var filteredData = filterDataByGenre(genre, data);
+        result = sortDataByRating(filteredData);
+        displayDataPoints(result[ratedOption]);      
+    }
+    function handleYearSelection(){
+        var year = d3.select(this).text();
+        var path = "/User/WeiXing/Projects/Info5100Project3/movie_budgets/movie_budget_"+year+".csv";
+        d3.csv(path, function(error, data){
+            if(error){
+                throw error;
+            }
+            result = sortDataByRating(data);
+            var inputData = result[ratedOption];
+            displayDataPoints(inputData); 
+        });
+    }
+    function handleRatedOption(){
+        ratedOption = d3.select(this).text();
+        var inputData = result[ratedOption];
+        displayDataPoints(inputData);
+    }
+</script>
+</body>
+</html>
