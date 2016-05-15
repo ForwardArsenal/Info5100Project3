@@ -33,7 +33,7 @@
     <div id="scatter-plot"></div>
     <h3>Year</h3>
 
-        <input  type="radio"  id="2010" value="All" name = "year" checked="checked" onClick = "handleYearSelection(this.id)"> All
+        <input  type="radio"  id="All" value="All" name = "year" checked="checked" onClick = "handleYearSelection(this.id)"> All
         <input type="radio" id="2010" value="2010" name = "year" onClick = "handleYearSelection(this.id)"> 2010
         <input type="radio"  id="2011" value="2011" name = "year" onClick = "handleYearSelection(this.id)"> 2011
         <input  type="radio" id="2012" value="2012" name = "year" onClick = "handleYearSelection(this.id)"> 2012
@@ -171,7 +171,7 @@
             .enter()
             .append("circle")
             .attr("class", "point")
-            .attr("r", function(d){ console.log(d.imdbRating); return sizeScale(parseFloat(d.imdbRating)); })
+            .attr("r", function(d){  return sizeScale(parseFloat(d.imdbRating)); })
             .attr("cx", function(d){ return xScale(parseInt(d.Budget.substr(1).replace(',', ''))); })
             .attr("cy", function(d){ return yScale(parseInt(d["Worldwide Gross"].substr(1).replace(',', ''))); })
             .style("fill", function(d) { return colorScale(((d.Genre).split(","))[0]); } )
@@ -185,7 +185,16 @@
     }
 
     function handleGenreFilterSelection(genre){
+        chosenGenre = genre;
+        console.log(genre);
         if(chosenYear != "All") {
+            console.log("chosen year is not all"+genre);
+            if(chosenGenre == "Empty") {
+            svg.selectAll(".point").data([]).exit().remove();
+                
+                 displayDataPoints(initialData["top50"]);  
+            return;
+            }
             var filteredData = filterDataByGenre(genre, yearArray);
             var sData = sortDataByRating(filteredData);
             svg.selectAll(".point").data([]).exit().remove();
@@ -196,10 +205,10 @@
         var inputData = initialData["top500"];
     
         if(genre == "Empty") {
+            console.log("In genre Empy");
             displayDataPoints(initialData["top50"]);  
             return;
         }
-        chosenGenre = genre;
 
         var filteredData = filterDataByGenre(genre, inputData);
         var sortedData = sortDataByRating(filteredData);
@@ -216,7 +225,6 @@
 
 
     function handleYearSelection(value){
-        console.log(value);
         chosenYear = value;
         var path = "movie_budgets/movie_budget_" + value + ".csv";
         console.log(path);
@@ -232,10 +240,13 @@
             svg.selectAll(".point").data([]).exit().remove();
 
             if(chosenGenre=="Empty"){
+            console.log("Inside if" +chosenGenre);
+
                 displayDataPoints(yData);
                 return; 
 
             }
+            console.log(chosenGenre);
             yData = yearData["top500"];
             yearArray = yData;
             yData = filterDataByGenre(chosenGenre, yData);
