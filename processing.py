@@ -17,6 +17,7 @@ manager = Manager()
 movieMap = manager.dict()
 titlesLength = dict()
 titlesContent = dict()
+genres = list()
 def generateCSVData(year):
     tmpTitles = []
     for row in table.findAll("tr")[1:]:
@@ -71,8 +72,11 @@ def writeToCSV(year):
         extraInfo = movieMap[title]
         if(extraInfo[3] == "None" or extraInfo[3] == "N/A"):
             continue
+        tokens = extraInfo[0].split(",")
+        for token in tokens:
+            if(token.strip() not in genres):
+                genres.append(token.strip())
         newData.append(record+extraInfo)
-
 
     csvHeader = ["Title", "Release Date", "Budget", "Domestic Gross", "Worldwide Gross", "Genre", "Director", "Awards", "imdbRating"]
     if year is not None:
@@ -111,6 +115,7 @@ if __name__ == '__main__':
         writeToCSV(year)
     '''
     generateAll()
+    print(genres)
 
 
 

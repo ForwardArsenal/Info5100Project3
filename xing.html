@@ -29,6 +29,7 @@
     .axis line { stroke: green; }
     .axis path { stroke: blue; fill: none; stroke-width: 2px; }
     .data-point { fill: red; opacity: 0.5; }
+    .new-data-point { fill: blue; opacity: 0.5; }
 </style>
 </head>
 <body>
@@ -46,6 +47,10 @@
         <option id="romance" value="Romance">Romance</option>
         <option id="thriller" value="Thriller">Thriller</option>
         <option id="documentary" value="Documentary">Documentary</option>
+        <option id="biography" value="Biography">Biography</option>
+        <option id="musical" value="Musical">Musical</option>
+        <option id="history" value="History">History</option>
+        <option id="war" value="War">War</option>
     </select>
     <script>
         var checkedGenres = [];
@@ -65,6 +70,11 @@
                             checkedGenres.splice(index, 1);
                         }
                     }
+                    /*
+                    checkedGenres.forEach(function(d){
+                        console.log("#"+d);
+                    });
+                    */
                     var updated = updateDataPoints(checkedGenres, data);
                     displayDataPoints(updated); 
                 }
@@ -112,7 +122,9 @@
         .attr("transform", "translate("+margin.left+","+margin.top+")");
     var data;
     var ratedOption = "top50";
-    
+    var obsoleteDataPoints;
+    var overlappedDataPoints;
+    var globalCounter = 0;
     d3.csv("movie_budgets/movie_budget_all.csv", function(error, records){
         if(error){
             throw error;
@@ -181,19 +193,31 @@
         var sorted = sortDataByRating(filtered);
         return sorted[ratedOption];
     }
-    function displayDataPoints(data){
+    function displayDataPoints(updatedData){
         //create the scale for the size of the data points in the scatter plot
         d3.selectAll(".axis text").remove();
         d3.selectAll(".axis line").remove();
-        d3.selectAll(".data-point").remove();
+
+        var currentDataPoints = d3.selectAll(".data-point")[0];
+        var newTitles = updatedData.map(function(d){ return d.Title; });
+        var currTitles = currentDataPoints.map(function(d){ return d.__data__.Title; });
+        console.log("##################################");
+        console.log("currTitles is "+currTitles);
+        console.log("newTitles is "+newTitles);
+        var overlappedTitles = currTitles.filter(function(d){ return newTitles.indexOf(d) != -1; });
+        console.log("overlappedTitles is "+overlappedTitles);
+        var obsoleteTitles = currTitles.filter(function(d){ return newTitles.indexOf(d) == -1; });
+        console.log("obsoleteTitles is "+obsoleteTitles);
+        var addedData = updatedData.filter(function(d){ return currTitles.indexOf(d.Title) == -1; });
+    
         var sizeScale = d3.scale.linear()
-                .domain(d3.extent(data, function(d){ return parseFloat(d.imdbRating); }))
+                .domain(d3.extent(updatedData, function(d){ return parseFloat(d.imdbRating); }))
                 .range([5, 10]);
         //set the domain of the x and y axis
-        var xMin = d3.min(data, function(d){ return parseInt(d.Budget.substr(1).replace(',', '')); });
-        var xMax = d3.max(data, function(d){ return parseInt(d.Budget.substr(1).replace(',', '')); });
-        var yMin = d3.min(data, function(d){ return parseInt(d["Worldwide Gross"].substr(1).replace(',', ''));});
-        var yMax = d3.max(data, function(d){ return parseInt(d["Worldwide Gross"].substr(1).replace(',', ''));});
+        var xMin = d3.min(updatedData, function(d){ return parseInt(d.Budget.substr(1).replace(',', '')); });
+        var xMax = d3.max(updatedData, function(d){ return parseInt(d.Budget.substr(1).replace(',', '')); });
+        var yMin = d3.min(updatedData, function(d){ return parseInt(d["Worldwide Gross"].substr(1).replace(',', ''));});
+        var yMax = d3.max(updatedData, function(d){ return parseInt(d["Worldwide Gross"].substr(1).replace(',', ''));});
         var incrementX = parseInt(xMin/5);
         var incrementY = parseInt(yMin/5);
         //x.domain(d3.extent(data, function(d){ return parseInt(d.Budget.substr(1).replace(',', '')); }));
@@ -222,22 +246,53 @@
             .attr("y", -36)
             .style("text-anchor", "end")
             .text("Worldwide Gross($)");
-
-        //create the starting point for the transition animation of data points
-        var dataPoints = svg.selectAll(".data-point").data(data)
+        globalCounter = globalCounter+1;
+        //create the starting point for the transition animation of newly-added data points
+        var newDataPoints = svg.append("g").attr("id", globalCounter).selectAll(".data-point").data(addedData)
             .enter()
             .append("circle")
             .attr("class", "data-point")
             .attr("r", function(d){ return sizeScale(parseFloat(d.imdbRating)); })
             .attr("cx", x(xMin-incrementX))
             .attr("cy", y(yMin-incrementY));
+        
+        
+        if(currTitles.length != 0 ){
+            var selector = "g[id='"+(globalCounter-1)+"']";
+            obsoleteDataPoints = svg.select(selector).selectAll(".data-point").transition()
+            .filter(function(d){
+                return obsoleteTitles.indexOf(d.Title) != -1;
+            });
+            
+            overlappedDataPoints = svg.select(selector).selectAll(".data-point").transition()
+            .filter(function(d){
+                return overlappedTitles.indexOf(d.Title) != -1;
+            });
 
-        dataPoints.transition()
+            //start the transition
+        
+        
+            console.log("The number of obsoleteDataPoints is "+obsoleteDataPoints.size());
+        
+            obsoleteDataPoints.duration(1000)
+            .attr("r", 0)
+            .remove();
+            /*
+            .attr("cx", x(xMin-incrementX))
+            .attr("cy", y(yMin-incrementY));
+            */
+        
+        
+             overlappedDataPoints.duration(1000)
+            .attr("cx", function(d){ return x(parseInt(d.Budget.substr(1).replace(',', ''))); })
+            .attr("cy", function(d){ return y(parseInt(d["Worldwide Gross"].substr(1).replace(',', ''))); });
+
+        }
+
+        newDataPoints.transition()
         .duration(1000)
         .attr("cx", function(d){ return x(parseInt(d.Budget.substr(1).replace(',', ''))); })
         .attr("cy", function(d){ return y(parseInt(d["Worldwide Gross"].substr(1).replace(',', ''))); });
-
-
             
     }
     function sortDataByRating(data){
@@ -254,7 +309,7 @@
         var num = genres.length;  
         return data.filter(function(d){
             var counter = 0;
-            var tokens = d["Genre"].split(",");
+            var tokens = d["Genre"].replace(/\s+/g, '').split(",");
             genres.forEach(function(g){
                 if(tokens.indexOf(g) != -1){
                     counter++;
