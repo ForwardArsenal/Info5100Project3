@@ -54,6 +54,7 @@
     </select>
     <script>
         var checkedGenres = [];
+        //using jQuery to register listeners on all the options included in the genre filter
         $(document).ready(function() {
             $('#genre-filter').multiselect({
                 //nonSelectedText: 'Please select a genre..'
@@ -70,11 +71,6 @@
                             checkedGenres.splice(index, 1);
                         }
                     }
-                    /*
-                    checkedGenres.forEach(function(d){
-                        console.log("#"+d);
-                    });
-                    */
                     var updated = updateDataPoints(checkedGenres, data);
                     displayDataPoints(updated); 
                 }
@@ -134,59 +130,9 @@
             
         //display the default data points (no genre is specified, top 50 rated)
         var inputData = sorted[ratedOption];
-        /*
-        dataPoints = svg.selectAll("data-point").data(inputData)
-        .enter()
-        .append("circle")
-        .attr("class", "data-point");
-        */
 
         displayDataPoints(inputData);
-        //register listeners on all the options included in the genre filter
-        d3.select("#action").on("click", handleGenreFilterSelection);
-
-        d3.select("#adventure").on("click", handleGenreFilterSelection);
-
-        d3.select("#animation").on("click", handleGenreFilterSelection);
-
-        d3.select("#comedy").on("click", handleGenreFilterSelection);
-
-        d3.select("#crime").on("click", handleGenreFilterSelection);
-
-        d3.select("#drama").on("click", handleGenreFilterSelection);
-
-        d3.select("#horror").on("click", handleGenreFilterSelection);
-
-        d3.select("#romance").on("click", handleGenreFilterSelection);
-
-        d3.select("#thriller").on("click", handleGenreFilterSelection);
-
-        d3.select("#documentary").on("click", handleGenreFilterSelection);
-
-        //register listeners on all the year options
-        d3.select("[id='2010']").on("click", handleYearSelection);
-
-        d3.select("[id='2011']").on("click", handleYearSelection);
-
-        d3.select("[id='2012']").on("click", handleYearSelection);
-
-        d3.select("[id='2013']").on("click", handleYearSelection);
-
-        d3.select("[id='2014']").on("click", handleYearSelection);
-
-        d3.select("[id='2015']").on("click", handleYearSelection);
-
-        //register listeners on all the rated options   
-        d3.select("#top-5").on("click", handleRatedOption);
-
-        d3.select("#top-15").on("click", handleRatedOption);
-
-        d3.select("#top-25").on("click", handleRatedOption);
-
-        d3.select("#top-50").on("click", handleRatedOption);
-
             
-
     });
     function updateDataPoints(checkedGenres, data){
         var filtered = filterDataByGenre(checkedGenres, data);
@@ -194,22 +140,20 @@
         return sorted[ratedOption];
     }
     function displayDataPoints(updatedData){
-        //create the scale for the size of the data points in the scatter plot
+
         d3.selectAll(".axis text").remove();
         d3.selectAll(".axis line").remove();
 
-        var currentDataPoints = d3.selectAll(".data-point")[0];
-        var newTitles = updatedData.map(function(d){ return d.Title; });
-        var currTitles = currentDataPoints.map(function(d){ return d.__data__.Title; });
-        console.log("##################################");
-        console.log("currTitles is "+currTitles);
-        console.log("newTitles is "+newTitles);
-        var overlappedTitles = currTitles.filter(function(d){ return newTitles.indexOf(d) != -1; });
-        console.log("overlappedTitles is "+overlappedTitles);
-        var obsoleteTitles = currTitles.filter(function(d){ return newTitles.indexOf(d) == -1; });
-        console.log("obsoleteTitles is "+obsoleteTitles);
+        var currentDataPoints = d3.selectAll(".data-point");
+        var updatedTitles = updatedData.map(function(d){ return d.Title; });
+        var currTitles = currentDataPoints[0].map(function(d){ return d.__data__.Title; });
+        var overlappedTitles = currTitles.filter(function(d){ return updatedTitles.indexOf(d) != -1; });
+        var obsoleteTitles = currTitles.filter(function(d){ return updatedTitles.indexOf(d) == -1; });
+        
+        obsoleteDataPoints = currentDataPoints.filter(function(d){ return obsoleteTitles.indexOf(d.Title) != -1; });
+        overlappedDataPoints = currentDataPoints.filter(function(d){ return overlappedTitles.indexOf(d.Title) != -1; });
         var addedData = updatedData.filter(function(d){ return currTitles.indexOf(d.Title) == -1; });
-    
+        //create the scale for the size of the data points in the scatter plot
         var sizeScale = d3.scale.linear()
                 .domain(d3.extent(updatedData, function(d){ return parseFloat(d.imdbRating); }))
                 .range([5, 10]);
@@ -220,12 +164,11 @@
         var yMax = d3.max(updatedData, function(d){ return parseInt(d["Worldwide Gross"].substr(1).replace(',', ''));});
         var incrementX = parseInt(xMin/5);
         var incrementY = parseInt(yMin/5);
-        //x.domain(d3.extent(data, function(d){ return parseInt(d.Budget.substr(1).replace(',', '')); }));
+        
         x.domain([xMin-incrementX, xMax]);
-        //y.domain(d3.extent(data, function(d){ return parseInt(d["Worldwide Gross"].substr(1).replace(',', '')); }));
+        
         y.domain([yMin-incrementY, yMax]);
-        //console.log(d3.max(data, function(d){ return parseInt(d["Worldwide Gross"].substr(1).replace(',', ''));}));
-        //console.log(d3.min(data, function(d){ return parseInt(d["Worldwide Gross"].substr(1).replace(',', ''));}));
+        
         svg.append("g")
             .attr("class", "axis")
             .attr("transform", "translate(0,"+height+")")
@@ -246,6 +189,7 @@
             .attr("y", -36)
             .style("text-anchor", "end")
             .text("Worldwide Gross($)");
+
         globalCounter = globalCounter+1;
         //create the starting point for the transition animation of newly-added data points
         var newDataPoints = svg.append("g").attr("id", globalCounter).selectAll(".data-point").data(addedData)
@@ -259,33 +203,23 @@
         
         if(currTitles.length != 0 ){
             var selector = "g[id='"+(globalCounter-1)+"']";
-            obsoleteDataPoints = svg.select(selector).selectAll(".data-point").transition()
-            .filter(function(d){
-                return obsoleteTitles.indexOf(d.Title) != -1;
-            });
-            
-            overlappedDataPoints = svg.select(selector).selectAll(".data-point").transition()
-            .filter(function(d){
-                return overlappedTitles.indexOf(d.Title) != -1;
-            });
-
-            //start the transition
         
-        
-            console.log("The number of obsoleteDataPoints is "+obsoleteDataPoints.size());
-        
-            obsoleteDataPoints.duration(1000)
-            .attr("r", 0)
-            .remove();
-            /*
+            obsoleteDataPoints
+            .transition()
+            .duration(1000)
             .attr("cx", x(xMin-incrementX))
-            .attr("cy", y(yMin-incrementY));
-            */
-        
-        
-             overlappedDataPoints.duration(1000)
-            .attr("cx", function(d){ return x(parseInt(d.Budget.substr(1).replace(',', ''))); })
-            .attr("cy", function(d){ return y(parseInt(d["Worldwide Gross"].substr(1).replace(',', ''))); });
+            .attr("cy", y(yMin-incrementY))
+            .remove();
+            
+            overlappedDataPoints
+            .transition()
+            .duration(1000)
+            .attr("cx", function(d){ 
+                return x(parseInt(d.Budget.substr(1).replace(',', ''))); 
+            })
+            .attr("cy", function(d){ 
+                return y(parseInt(d["Worldwide Gross"].substr(1).replace(',', ''))); 
+            });
 
         }
 
@@ -317,17 +251,6 @@
             });
             return counter == num;
         });
-    }
-    function handleGenreFilterSelection(){
-        //var sel = d3.select(this);
-        //var genre = selection.options[sel.selectedIndex].value;
-        console.log("Clicked!");
-        var genre = d3.select(this).property("value");
-        console.log("The selected genre is "+genre);
-        //var inputData = result[ratedOption];
-        var filteredData = filterDataByGenre(genre, data);
-        result = sortDataByRating(filteredData);
-        displayDataPoints(result[ratedOption]);      
     }
     function handleYearSelection(){
         var year = d3.select(this).text();
