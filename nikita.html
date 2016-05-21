@@ -23,6 +23,27 @@
   display:none;
   visibility: hidden;
 }
+
+.axis text{
+        font-size: 6pt;
+    }
+    .axis line { stroke: green; }
+    .axis path { stroke: blue; fill: none; stroke-width: 2px; }
+    .data-point { fill: red; opacity: 0.5; }
+    .new-data-point { fill: blue; opacity: 0.5; }
+/*#graph{
+    display: inline-block;
+
+}*/
+
+    .scatter-plot{
+  float: left;
+}
+.detail{
+	    background: yellow;
+
+        overflow: hidden
+}
 </style>
 </head>
 <body>
@@ -43,8 +64,10 @@
         <option id="documentary" value="Documentary">Documentary</option>
     </select>
     </div>
-
-    <div id="scatter-plot"></div>
+    <div id = "graph">
+    <div id="scatter-plot" class="scatter-plot"></div>
+    <div id = "detail" class = "detail">Click on the circle for more details </div>
+    </div>
     <div class = "row" id = "group">
     <div class = "block1">
     <h3>Year</h3>
@@ -69,14 +92,14 @@
 
 
     var margin = { top: 20, bottom: 30, left: 40, right: 20 };
-    var width = 1000;
+    var width = 800;
     var height = 600;
     padding = 70;
     var options = ["Action", "Adventure", "Animation", "Comedy", "Crime", "Drama", "Horror", "Romance", "Thriller", "Documentary"];
-
+    var prev = "false";
     var xScale = d3.scale.log().range([0, width]).nice();
     var yScale = d3.scale.log().range([height, 0]).nice();
-    var colorScale = d3.scale.category10();
+    var colorScale = d3.scale.category10().domain(options);
     var ratedOption = "top50";
     var chosenGenre = "All";
     var chosenYear = "All";
@@ -84,8 +107,8 @@
     var yearArray;
     var result=[]; var xDomain; var yDomain;
     var initialData;
-        var xAxis = d3.svg.axis().scale(xScale).orient("bottom");
-        var yAxis = d3.svg.axis().scale(yScale).orient("left");    
+        var xAxis = d3.svg.axis().scale(xScale).orient("bottom").ticks(5).tickFormat(d3.format("s"));
+        var yAxis = d3.svg.axis().scale(yScale).orient("left").ticks(10).tickFormat(d3.format("s"));    
     d3.csv("movie_budgets/movie_budget_all.csv", function(error, data){
         if(error){
             throw error;
@@ -108,7 +131,7 @@
 
     function sortDataByRating(values){
         values.sort(function(a, b){
-            return parseFloat(a.imdbRating) - parseFloat(b.imdbRating);
+            return parseFloat(b.imdbRating) - parseFloat(a.imdbRating);
         });
         var filtered = values.filter(function(d){ 
             return parseInt(d.Budget.substr(1).replace(',', '')) != 0
@@ -124,19 +147,11 @@
 
 
      function displayDataPoints(data){
-        //create the scale for the size of the data points in the scatter plot
-        
-        // xScale = d3.scale.log().domain(xDomain).range([0, (width )]);
-        // yScale = d3.scale.log().domain(yDomain).range([height, 0]);
-        //     var sizeScale = d3.scale.linear()
-        //         .domain(d3.extent(data, function(d){ return parseFloat(d.imdbRating); }))
-        //         .range([5, 14]);
-
-            //set the domain of the x and y axis
-
+     
+     	document.getElementById("detail").innerHTML = "Click on the circle for more details";
         d3.selectAll(".axis text").remove();
         d3.selectAll(".axis line").remove();
-        d3.selectAll(".data-point").remove();
+        d3.selectAll(".point").remove();
         var sizeScale = d3.scale.linear()
                 .domain(d3.extent(data, function(d){ return parseFloat(d.imdbRating); }))
                 .range([5, 18]);
@@ -158,9 +173,10 @@
                .call(xAxis)
                .append("text")
                .attr("class", "label")
-               .attr("x", width)
-               .attr("y", -6)
-               .style("text-anchor", "end")
+               .attr("x", width/2.5)
+               .attr("y", (padding/2.65))
+               .style("text-anchor", "middle")
+               .style("font-size", "14px")
                .text("Budget($)");
 
             svg.append("g")
@@ -169,10 +185,14 @@
                .append("text")
                .attr("class", "label")
                .attr("transform", "rotate(-90)")
-               .attr("y", 6)
-               .style("text-anchor", "end")
+               .attr("x", -width/3)
+               .attr("y", -padding/2.5)
+               .style("text-anchor", "middle")
+               .style("font-size", "14px")               
                .text("Worldwide Gross($)");
 
+
+           
             var dataPoints = svg.selectAll(".point")
             .data(data)
             .enter()
@@ -181,9 +201,32 @@
             .attr("r", function(d){  return sizeScale(parseFloat(d.imdbRating)); })
             .attr("cx", xScale(xDomain[0] - incrementX))
             .attr("cy", yScale(yDomain[0] - incrementY))
-            .style("fill", function(d) { return colorScale(((d.Genre).split(","))[0]); } )
+            .style("fill", function(d) { 
+
+            if(chosenGenre == "All") {
+                return colorScale(((d.Genre).split(","))[0]);
+            }
+            else {
+                return colorScale(chosenGenre);
+            }
+  } )
             .style("stroke", "black")
-            .style("opacity", 0.9);
+            .style("opacity", 0.9)
+            .on("click", function(d) {  
+			if(prev != false)
+			{
+				d3.select(prev).style("stroke", "black").style("stroke-width", "1px");
+			}
+						prev = this;
+            			d3.select(this).style("stroke", "yellow").style("stroke-width", "5px");
+
+            	document.getElementById("detail").innerHTML = "<strong>Movie Title:</strong> <span style='color:blue'>" + d.Title +"</span> <br>" + "<strong>Genre:</strong> <span style='color:blue'>" + d.Genre + "</span> <br>"
+                + "<strong>Release Date:</strong> <span style='color:blue'>" + d["Release Date"] + "</span> <br>"
+            	+ "<strong>Budget:</strong> <span style='color:blue'>" + d.Budget + "</span> <br>"
+            	+ "<strong>Worldwide Gross:</strong> <span style='color:blue'>" + d["Worldwide Gross"] + "</span> <br>"
+            	+ "<strong>IMDb Rating:</strong> <span style='color:blue'>" + d.imdbRating + "</span> <br>"
+            	+ "<strong>Awards:</strong> <span style='color:blue'>" + d.Awards + "</span> <br>"
+            	; });
 
              dataPoints.transition()
         .duration(1000)
@@ -193,9 +236,15 @@
 
     }
 
+  
+
     function filterDataByGenre(genre, data){
         return data.filter(function(d){
-            return (d.Genre).split(",").includes(genre);
+            var temp = (d.Genre).split(",");
+            for(var i = 0; i < temp.length; i++) {
+                temp[i]= (temp[i]).trim();
+            }
+            return temp.includes(genre);
         });
     }
 
@@ -259,6 +308,8 @@
             yData = yearData["top500"];
             yearArray = yData;
             yData = filterDataByGenre(chosenGenre, yData);
+            yData = sortDataByRating(yData);
+            yData = yData[ratedOption];
             displayDataPoints(yData); 
         });
     }
