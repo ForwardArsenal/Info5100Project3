@@ -29,6 +29,7 @@
     .axis line { stroke: green; }
     .axis path { stroke: blue; fill: none; stroke-width: 2px; }
     .data-point { fill: red; opacity: 0.5; }
+    .new-data-point { fill: blue; opacity: 0.5; }
 </style>
 </head>
 <body>
@@ -46,9 +47,14 @@
         <option id="romance" value="Romance">Romance</option>
         <option id="thriller" value="Thriller">Thriller</option>
         <option id="documentary" value="Documentary">Documentary</option>
+        <option id="biography" value="Biography">Biography</option>
+        <option id="musical" value="Musical">Musical</option>
+        <option id="history" value="History">History</option>
+        <option id="war" value="War">War</option>
     </select>
     <script>
         var checkedGenres = [];
+        //using jQuery to register listeners on all the options included in the genre filter
         $(document).ready(function() {
             $('#genre-filter').multiselect({
                 //nonSelectedText: 'Please select a genre..'
@@ -112,7 +118,9 @@
         .attr("transform", "translate("+margin.left+","+margin.top+")");
     var data;
     var ratedOption = "top50";
-    
+    var obsoleteDataPoints;
+    var overlappedDataPoints;
+    var globalCounter = 0;
     d3.csv("movie_budgets/movie_budget_all.csv", function(error, records){
         if(error){
             throw error;
@@ -122,86 +130,45 @@
             
         //display the default data points (no genre is specified, top 50 rated)
         var inputData = sorted[ratedOption];
-        /*
-        dataPoints = svg.selectAll("data-point").data(inputData)
-        .enter()
-        .append("circle")
-        .attr("class", "data-point");
-        */
 
         displayDataPoints(inputData);
-        //register listeners on all the options included in the genre filter
-        d3.select("#action").on("click", handleGenreFilterSelection);
-
-        d3.select("#adventure").on("click", handleGenreFilterSelection);
-
-        d3.select("#animation").on("click", handleGenreFilterSelection);
-
-        d3.select("#comedy").on("click", handleGenreFilterSelection);
-
-        d3.select("#crime").on("click", handleGenreFilterSelection);
-
-        d3.select("#drama").on("click", handleGenreFilterSelection);
-
-        d3.select("#horror").on("click", handleGenreFilterSelection);
-
-        d3.select("#romance").on("click", handleGenreFilterSelection);
-
-        d3.select("#thriller").on("click", handleGenreFilterSelection);
-
-        d3.select("#documentary").on("click", handleGenreFilterSelection);
-
-        //register listeners on all the year options
-        d3.select("[id='2010']").on("click", handleYearSelection);
-
-        d3.select("[id='2011']").on("click", handleYearSelection);
-
-        d3.select("[id='2012']").on("click", handleYearSelection);
-
-        d3.select("[id='2013']").on("click", handleYearSelection);
-
-        d3.select("[id='2014']").on("click", handleYearSelection);
-
-        d3.select("[id='2015']").on("click", handleYearSelection);
-
-        //register listeners on all the rated options   
-        d3.select("#top-5").on("click", handleRatedOption);
-
-        d3.select("#top-15").on("click", handleRatedOption);
-
-        d3.select("#top-25").on("click", handleRatedOption);
-
-        d3.select("#top-50").on("click", handleRatedOption);
-
             
-
     });
     function updateDataPoints(checkedGenres, data){
         var filtered = filterDataByGenre(checkedGenres, data);
         var sorted = sortDataByRating(filtered);
         return sorted[ratedOption];
     }
-    function displayDataPoints(data){
-        //create the scale for the size of the data points in the scatter plot
+    function displayDataPoints(updatedData){
+
         d3.selectAll(".axis text").remove();
         d3.selectAll(".axis line").remove();
-        d3.selectAll(".data-point").remove();
+
+        var currentDataPoints = d3.selectAll(".data-point");
+        var updatedTitles = updatedData.map(function(d){ return d.Title; });
+        var currTitles = currentDataPoints[0].map(function(d){ return d.__data__.Title; });
+        var overlappedTitles = currTitles.filter(function(d){ return updatedTitles.indexOf(d) != -1; });
+        var obsoleteTitles = currTitles.filter(function(d){ return updatedTitles.indexOf(d) == -1; });
+        
+        obsoleteDataPoints = currentDataPoints.filter(function(d){ return obsoleteTitles.indexOf(d.Title) != -1; });
+        overlappedDataPoints = currentDataPoints.filter(function(d){ return overlappedTitles.indexOf(d.Title) != -1; });
+        var addedData = updatedData.filter(function(d){ return currTitles.indexOf(d.Title) == -1; });
+        //create the scale for the size of the data points in the scatter plot
         var sizeScale = d3.scale.linear()
-                .domain(d3.extent(data, function(d){ return parseFloat(d.imdbRating); }))
+                .domain(d3.extent(updatedData, function(d){ return parseFloat(d.imdbRating); }))
                 .range([5, 10]);
         //set the domain of the x and y axis
-        var xMin = d3.min(data, function(d){ return parseInt(d.Budget.substr(1).replace(',', '')); });
-        var xMax = d3.max(data, function(d){ return parseInt(d.Budget.substr(1).replace(',', '')); });
-        var yMin = d3.min(data, function(d){ return parseInt(d["Worldwide Gross"].substr(1).replace(',', ''));});
-        var yMax = d3.max(data, function(d){ return parseInt(d["Worldwide Gross"].substr(1).replace(',', ''));});
+        var xMin = d3.min(updatedData, function(d){ return parseInt(d.Budget.substr(1).replace(',', '')); });
+        var xMax = d3.max(updatedData, function(d){ return parseInt(d.Budget.substr(1).replace(',', '')); });
+        var yMin = d3.min(updatedData, function(d){ return parseInt(d["Worldwide Gross"].substr(1).replace(',', ''));});
+        var yMax = d3.max(updatedData, function(d){ return parseInt(d["Worldwide Gross"].substr(1).replace(',', ''));});
         var incrementX = parseInt(xMin/5);
         var incrementY = parseInt(yMin/5);
-        //x.domain(d3.extent(data, function(d){ return parseInt(d.Budget.substr(1).replace(',', '')); }));
+        
         x.domain([xMin-incrementX, xMax]);
-        //y.domain(d3.extent(data, function(d){ return parseInt(d["Worldwide Gross"].substr(1).replace(',', '')); }));
+        
         y.domain([yMin-incrementY, yMax]);
-        //console.log(d3.max(data, function(d){ return parseInt(d["Worldwide Gross"].substr(1).replace(',', ''));}));
-        //console.log(d3.min(data, function(d){ return parseInt(d["Worldwide Gross"].substr(1).replace(',', ''));}));
+        
         svg.append("g")
             .attr("class", "axis")
             .attr("transform", "translate(0,"+height+")")
@@ -223,21 +190,43 @@
             .style("text-anchor", "end")
             .text("Worldwide Gross($)");
 
-        //create the starting point for the transition animation of data points
-        var dataPoints = svg.selectAll(".data-point").data(data)
+        globalCounter = globalCounter+1;
+        //create the starting point for the transition animation of newly-added data points
+        var newDataPoints = svg.append("g").attr("id", globalCounter).selectAll(".data-point").data(addedData)
             .enter()
             .append("circle")
             .attr("class", "data-point")
             .attr("r", function(d){ return sizeScale(parseFloat(d.imdbRating)); })
             .attr("cx", x(xMin-incrementX))
             .attr("cy", y(yMin-incrementY));
+        
+        
+        if(currTitles.length != 0 ){
+            var selector = "g[id='"+(globalCounter-1)+"']";
+        
+            obsoleteDataPoints
+            .transition()
+            .duration(1000)
+            .attr("cx", x(xMin-incrementX))
+            .attr("cy", y(yMin-incrementY))
+            .remove();
+            
+            overlappedDataPoints
+            .transition()
+            .duration(1000)
+            .attr("cx", function(d){ 
+                return x(parseInt(d.Budget.substr(1).replace(',', ''))); 
+            })
+            .attr("cy", function(d){ 
+                return y(parseInt(d["Worldwide Gross"].substr(1).replace(',', ''))); 
+            });
 
-        dataPoints.transition()
+        }
+
+        newDataPoints.transition()
         .duration(1000)
         .attr("cx", function(d){ return x(parseInt(d.Budget.substr(1).replace(',', ''))); })
         .attr("cy", function(d){ return y(parseInt(d["Worldwide Gross"].substr(1).replace(',', ''))); });
-
-
             
     }
     function sortDataByRating(data){
@@ -254,7 +243,7 @@
         var num = genres.length;  
         return data.filter(function(d){
             var counter = 0;
-            var tokens = d["Genre"].split(",");
+            var tokens = d["Genre"].replace(/\s+/g, '').split(",");
             genres.forEach(function(g){
                 if(tokens.indexOf(g) != -1){
                     counter++;
@@ -262,17 +251,6 @@
             });
             return counter == num;
         });
-    }
-    function handleGenreFilterSelection(){
-        //var sel = d3.select(this);
-        //var genre = selection.options[sel.selectedIndex].value;
-        console.log("Clicked!");
-        var genre = d3.select(this).property("value");
-        console.log("The selected genre is "+genre);
-        //var inputData = result[ratedOption];
-        var filteredData = filterDataByGenre(genre, data);
-        result = sortDataByRating(filteredData);
-        displayDataPoints(result[ratedOption]);      
     }
     function handleYearSelection(){
         var year = d3.select(this).text();

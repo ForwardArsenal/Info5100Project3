@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<link rel="stylesheet" href="http://www.w3schools.com/lib/w3.css">
+<style>
+
+
+body {
+  font: 10px sans-serif;
+  position: relative;
+}
+
+.axis path,
+.axis line {
+  fill: none;
+  stroke: #000;
+  shape-rendering: crispEdges;
+}
+
+.x.axis path {
+  display: none;
+}
+
+.line {
+  fill: none;
+  stroke: #FF8000;
+  stroke-width: 3px;
+}
+
+.button {
+    background-color: #7fbf7b; /* Green */
+    border: none;
+    color: white;
+    padding: 15px 32px;
+    text-align: center;
+    text-decoration: none;
+    display: inline-block;
+    font-size: 16px;
+    cursor: pointer;
+    float: left;
+
+}
+
+.button:hover {
+    background-color: #3e8e41;
+}
+</style>
+
+
+
+<body>		
+	
+	<h1>A Decreasing Trend in Return Rate</h1></div>	
+	<div id ="buttons"  style="width: 900px; margin: auto">
+	<button class="button" onclick="logRate()" style="float: right;">Log Rate</button>
+	<button class="button" onclick="rate()"  style="float: right;">Raw Rate</button>
+	
+	</div>
+	<div id ="lineChart"> </div>
+</body>		
+<script src="//d3js.org/d3.v3.min.js"></script>
+
+<script>
+// code source: https://bl.ocks.org/mbostock/3883245
+// data source http://www.the-numbers.com/movie/budgets/all
+
+	var margin = {top: 20, right: 20, bottom: 30, left: 50},
+    	width = 960 - margin.left - margin.right,
+   	 	height = 500 - margin.top - margin.bottom;
+
+
+	var xScale = d3.scale.linear()
+    .range([0, width]);
+
+	var yScale = d3.scale.linear()
+   	 	.range([height, 0]);
+
+	var xAxis = d3.svg.axis()
+   	 	.scale(xScale)
+   	 	.orient("bottom")
+		.tickFormat(d3.format(".s"));
+
+	var yAxis = d3.svg.axis()
+    	.scale(yScale)
+    	.orient("left");
+
+	var svg = d3.select("#lineChart").append("svg")
+    		.attr("width", width + margin.left + margin.right)
+    		.attr("height", height + margin.top + margin.bottom)
+  		.append("g")
+    		.attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+	
+	//helper function 
+	function linearRegression(y,x){
+			var lr = {};
+			var n = y.length;
+			var sum_x = 0;
+			var sum_y = 0;
+			var sum_xy = 0;
+			var sum_xx = 0;
+			var sum_yy = 0;
+
+			for (var i = 0; i < y.length; i++) {
+				sum_x += x[i];
+				sum_y += y[i];
+				sum_xy += (x[i]*y[i]);
+				sum_xx += (x[i]*x[i]);
+				sum_yy += (y[i]*y[i]);
+			}
+
+			lr.slope = (n * sum_xy - sum_x * sum_y) / (n*sum_xx - sum_x * sum_x);
+			lr.intercept = (sum_y - lr.slope * sum_x)/n;
+			lr.r2 = Math.pow((n*sum_xy - sum_x*sum_y)/Math.sqrt((n*sum_xx-sum_x*sum_x)*(n*sum_yy-sum_y*sum_y)),2);
+			
+			return lr;
+	}	
+					
+						
+	d3.csv("meanAllMonYear.csv", function(error, data) {
+ 		data.forEach(function(d) {
+  			d.year = +d.year;
+  			d.logYearMeanRate = +d.logYearMeanRate; });
+	  
+	//map the domain
+ 	xScale.domain(d3.extent(data, function(d) { return d.year; }));
+  	yScale.domain(d3.extent(data, function(d) { return d.logYearMeanRate; }));
+	
+	var valueLine = d3.svg.line().interpolate("basis")
+		.x(function(d) { return xScale(d.year); })
+		.y(function(d) { return yScale(d.logYearMeanRate); });
+	
+	
+	//draw x axis
+  	svg.append("g")
+      .attr("class", "x axis")
+      .attr("transform", "translate(0," + height + ")")
+	  .call(xAxis);
+	  
+	//format x ticks 
+	var formatxAxis = d3.format('s'); 
+
+	//draw y axis 
+  	svg.append("g")
+      .attr("class", "y axis")
+      .call(yAxis)
+      .append("text")
+      .attr("transform", "rotate(-90)")
+      .attr("y", 6)
+      .attr("dy", ".71em")
+      .style("text-anchor", "end")
+      .text("Return Rate");
+	
+	//draw the path
+  	svg.append("path")
+    	.attr("class", "line")
+	  	.attr("d", valueLine(data));
+			
+				
+	var xval = data.map(function (d) { return d.year; });
+	var yval = data.map(function (d) { return d.logYearMeanRate; });
+	
+	lr = linearRegression(yval, xval);
+	//feed in the x and y from the dataset 
+	
+	max = d3.max(xval);
+	
+	x1= 0;
+	x2= max;
+	y1= lr.intercept;
+	y2= lr.slope*max + lr.intercept;
+	
+	var trendData = [{"x": x1, "y": y1}, {"x": x2, "y": y2}];
+
+	var regressionLine = d3.svg.line()
+		    	.x(function(d) { return xScale(d.x); })
+		    	.y(function(d) { return yScale(d.y); });	
+				
+
+	//draw the path
+	svg.append("path")
+		.attr("class", "line")
+  		.attr("d", regressionLine(trendData))
+		.attr("id", "regressionLine")
+		.style("stroke-dasharray", ("20, 3"))
+		.style("stroke", "#b2df8a")	
+		.style("stroke-width", "7")
+		.style("opacity", "0.5");
+	});
+	
+	
+	
+	function rate() {
+    	// Get the data again
+    	d3.csv("meanAllMonYear.csv", function(error, data) {
+       		data.forEach(function(d) {
+	    	d.year = +d.year;
+	    	d.yearMean = +d.yearMean;
+	    });
+
+    	// Scale the range of the data again
+    	xScale.domain(d3.extent(data, function(d) { return d.year; }));
+	 	yScale.domain(d3.extent(data, function(d) { return d.yearMean; }));
+
+		var valueLine2 = d3.svg.line().interpolate("basis")
+			.x(function(d) { return xScale(d.year); })
+			.y(function(d) { return yScale(d.yearMean); });
+
+		var regressionLine2 = d3.svg.line()
+    		.x(function(d) { return xScale(d.x); })
+    		.y(function(d) { return yScale(d.y); });
+
+		var xval = data.map(function (d) { return d.year; });
+		var yval = data.map(function (d) { return d.yearMean; });
+
+
+		lr = linearRegression(yval, xval);
+
+		max = d3.max(xval);
+
+		x1= 0;
+		x2= max;
+		y1= lr.intercept;
+		y2= lr.slope*max + lr.intercept;
+
+		var trendData = [{"x": x1, "y": y1}, {"x": x2, "y": y2}];
+
+	// Select the section we want to apply our changes to
+		var svg = d3.select("#lineChart").transition();
+
+	// Make the changes
+	svg.select(".line")   // change the line
+			.duration(750)
+			.attr("d", valueLine2(data));
+	svg.select("#regressionLine") //change the regression line
+			.duration(750)
+			.attr("d", regressionLine2(trendData))
+			.attr("id", "regressionLine2");
+	svg.select(".x.axis") // change the x axis
+			.duration(750)
+			.call(xAxis);
+	svg.select(".y.axis") // change the y axis
+			.duration(750)
+			.call(yAxis);
+
+    });
+}
+
+	function logRate(){
+    	// Get the data again
+    	d3.csv("meanAllMonYear.csv", function(error, data) {
+       		data.forEach(function(d) {
+	    	d.year = +d.year;
+	    	d.logYearMeanRate = +d.logYearMeanRate;
+	    });
+
+    	// Scale the range of the data again 
+    	xScale.domain(d3.extent(data, function(d) { return d.year; }));
+	 	yScale.domain(d3.extent(data, function(d) { return d.logYearMeanRate; }));
+		
+		var valueLine3 = d3.svg.line().interpolate("basis")
+			.x(function(d) { return xScale(d.year); })
+			.y(function(d) { return yScale(d.logYearMeanRate); });
+		
+		var regressionLine3 = d3.svg.line()
+    		.x(function(d) { return xScale(d.x); })
+    		.y(function(d) { return yScale(d.y); });
+		
+		var xval = data.map(function (d) { return d.year; });
+		var yval = data.map(function (d) { return d.logYearMeanRate; });
+
+
+		lr = linearRegression(yval, xval);
+	
+		max = d3.max(xval);
+	
+		x1= 0;
+		x2= max;
+		y1= lr.intercept;
+		y2= lr.slope*max + lr.intercept;
+	
+	
+		var trendData = [{"x": x1, "y": y1}, {"x": x2, "y": y2}];
+						
+	// Select the section we want to apply our changes to
+		var svg = d3.select("#lineChart").transition();
+
+	// Make the changes
+	svg.select(".line")   // change the line
+			.duration(750)
+			.attr("d", valueLine3(data));
+	svg.select("#regressionLine2") //change the regression line
+			.duration(750)
+			.attr("d", regressionLine3(trendData))
+			.attr("id", "regressionLine");
+	svg.select(".x.axis") // change the x axis
+			.duration(750)
+			.call(xAxis);
+	svg.select(".y.axis") // change the y axis
+			.duration(750)
+			.call(yAxis);			
+
+    });	
+	
+	}
+
+
+</script>
