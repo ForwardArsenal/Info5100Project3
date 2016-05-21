@@ -74,8 +74,8 @@
     padding = 70;
     var options = ["Action", "Adventure", "Animation", "Comedy", "Crime", "Drama", "Horror", "Romance", "Thriller", "Documentary"];
 
-    var xScale; 
-    var yScale; 
+    var xScale = d3.scale.log().range([0, width]).nice();
+    var yScale = d3.scale.log().range([height, 0]).nice();
     var colorScale = d3.scale.category10();
     var ratedOption = "top50";
     var chosenGenre = "All";
@@ -84,6 +84,8 @@
     var yearArray;
     var result=[]; var xDomain; var yDomain;
     var initialData;
+        var xAxis = d3.svg.axis().scale(xScale).orient("bottom");
+        var yAxis = d3.svg.axis().scale(yScale).orient("left");    
     d3.csv("movie_budgets/movie_budget_all.csv", function(error, data){
         if(error){
             throw error;
@@ -124,14 +126,31 @@
      function displayDataPoints(data){
         //create the scale for the size of the data points in the scatter plot
         
-        xScale = d3.scale.log().domain(xDomain).range([0, (width )]);
-        yScale = d3.scale.log().domain(yDomain).range([height, 0]);
-            var sizeScale = d3.scale.linear()
-                .domain(d3.extent(data, function(d){ return parseFloat(d.imdbRating); }))
-                .range([5, 14]);
-        var xAxis = d3.svg.axis().scale(xScale).orient("bottom");
-        var yAxis = d3.svg.axis().scale(yScale).orient("left");
+        // xScale = d3.scale.log().domain(xDomain).range([0, (width )]);
+        // yScale = d3.scale.log().domain(yDomain).range([height, 0]);
+        //     var sizeScale = d3.scale.linear()
+        //         .domain(d3.extent(data, function(d){ return parseFloat(d.imdbRating); }))
+        //         .range([5, 14]);
+
             //set the domain of the x and y axis
+
+        d3.selectAll(".axis text").remove();
+        d3.selectAll(".axis line").remove();
+        d3.selectAll(".data-point").remove();
+        var sizeScale = d3.scale.linear()
+                .domain(d3.extent(data, function(d){ return parseFloat(d.imdbRating); }))
+                .range([5, 18]);
+
+
+        xDomain = d3.extent(data, function(d){ return parseInt(d.Budget.substr(1).replace(',', '')); })
+        yDomain = d3.extent(data, function(d){ return parseInt(d["Worldwide Gross"].substr(1).replace(',', '')); });
+
+        var incrementX = parseInt(xDomain[0]/5);
+        var incrementY = parseInt(yDomain[0]/5);
+
+        xScale.domain([xDomain[0]-incrementX, xDomain[1]]);
+        yScale.domain([yDomain[0]-incrementY, yDomain[1]]);
+
             
             svg.append("g")
                .attr("class", "axis")
@@ -154,17 +173,24 @@
                .style("text-anchor", "end")
                .text("Worldwide Gross($)");
 
-            svg.selectAll(".point")
+            var dataPoints = svg.selectAll(".point")
             .data(data)
             .enter()
             .append("circle")
             .attr("class", "point")
             .attr("r", function(d){  return sizeScale(parseFloat(d.imdbRating)); })
-            .attr("cx", function(d){ return xScale(parseInt(d.Budget.substr(1).replace(',', ''))); })
-            .attr("cy", function(d){ return yScale(parseInt(d["Worldwide Gross"].substr(1).replace(',', ''))); })
+            .attr("cx", xScale(xDomain[0] - incrementX))
+            .attr("cy", yScale(yDomain[0] - incrementY))
             .style("fill", function(d) { return colorScale(((d.Genre).split(","))[0]); } )
             .style("stroke", "black")
             .style("opacity", 0.9);
+
+             dataPoints.transition()
+        .duration(1000)
+        .attr("cx", function(d){ return xScale(parseInt(d.Budget.substr(1).replace(',', ''))); })
+        .attr("cy", function(d){ return yScale(parseInt(d["Worldwide Gross"].substr(1).replace(',', ''))); });
+
+
     }
 
     function filterDataByGenre(genre, data){
