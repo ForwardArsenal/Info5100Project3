@@ -13,9 +13,8 @@ body {
 .axis line {
   fill: none;
   stroke: #A0A0A0;
-  shape-rendering: crispEdges;
+  shape-rendering: crispEdge;
 }
-
 
 .line {
   fill: none;
@@ -128,9 +127,9 @@ body {
 	
 	//draw x axis
   	svg.append("g")
-      .attr("class", "x axis")
+      .attr("class", "x axis")	
       .attr("transform", "translate(0," + height + ")")
-	  .call(xAxis);
+		.call(xAxis);
 	  
 	//format x ticks 
 	var formatxAxis = d3.format('s'); 
