@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <meta charset="utf-8">
-<link rel="stylesheet" href="http://www.w3schools.com/lib/w3.css">
+
 <style>
 
 
@@ -12,23 +12,20 @@ body {
 .axis path,
 .axis line {
   fill: none;
-  stroke: #000;
-  shape-rendering: crispEdges;
-}
-
-.x.axis path {
-  display: none;
+  stroke: #A0A0A0;
+  shape-rendering: crispEdge;
 }
 
 .line {
   fill: none;
-  stroke: #FF8000;
+  stroke: #FF6347;
   stroke-width: 3px;
 }
 
 .button {
     background-color: #7fbf7b; /* Green */
-    border: none;
+    border: 1px solid green;
+	border-radius: 4px;
     color: white;
     padding: 15px 32px;
     text-align: center;
@@ -40,9 +37,7 @@ body {
 
 }
 
-.button:hover {
-    background-color: #3e8e41;
-}
+
 </style>
 
 
@@ -50,7 +45,7 @@ body {
 <body>		
 	
 	<h1>A Decreasing Trend in Return Rate</h1></div>	
-	<div id ="buttons"  style="width: 900px; margin: auto">
+	<div id ="buttons"  style="width: 550px; margin: auto">
 	<button class="button" onclick="logRate()" style="float: right;">Log Rate</button>
 	<button class="button" onclick="rate()"  style="float: right;">Raw Rate</button>
 	
@@ -131,9 +126,9 @@ body {
 	
 	//draw x axis
   	svg.append("g")
-      .attr("class", "x axis")
+      .attr("class", "x axis")	
       .attr("transform", "translate(0," + height + ")")
-	  .call(xAxis);
+		.call(xAxis);
 	  
 	//format x ticks 
 	var formatxAxis = d3.format('s'); 
