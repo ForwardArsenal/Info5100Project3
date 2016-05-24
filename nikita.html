@@ -266,6 +266,8 @@ width: 65%;
             .attr("r", function(d){  return sizeScale(parseFloat(d.imdbRating)); })
             .attr("cx", xScale(xDomain[0] - incrementX))
             .attr("cy", yScale(yDomain[0] - incrementY))
+                        .style("stroke", "black")
+            .style("opacity", 0.9)
             .style("fill", function(d) { 
 
             if(chosenGenre == "All") {
