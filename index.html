@@ -1,14 +1,33 @@
 <!DOCTYPE html>
+<html>
 <meta charset="utf-8">
 <head>
 <script src="http://d3js.org/d3.v3.min.js"></script>
-<script src="http://code.jquery.com/jquery-1.11.0.min.js"></script>
+<!-- jQuery -->
+<script src="//ajax.googleapis.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
+
+<!-- Latest compiled and minified Bootstrap CSS -->
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css" integrity="sha384-1q8mTJOASx8j1Au+a5WDVnPi2lkFfwwEAa8hDDdjZlpLegxhjVME1fgjWPGmkzs7" crossorigin="anonymous">
+
+<!-- Optional theme -->
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap-theme.min.css" integrity="sha384-fLW2N01lMqjakBkx3l/M9EahuwpSfeNvV63J5ezn3uZzapT0u7EYsXMjQV+0En5r" crossorigin="anonymous">
+
+<!-- Latest compiled and minified Bootstrap JavaScript -->
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js" integrity="sha384-0mSbJDEHialfmuBBQP6A4Qrprq5OVfW37PRR3j5ELqxss1yVqOtnepnHVP9aJ7xS" crossorigin="anonymous"></script>
+
+<!-- Latest compiled Bootstrap multiselect css -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-multiselect/0.9.13/css/bootstrap-multiselect.css">
+
+<!-- Latest compiled Bootstrap multiselect javascript -->
+<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-multiselect/0.9.13/js/bootstrap-multiselect.min.js"></script>
+
 <meta name="viewport" content="width=device-width,initial-scale=1">
+<!--
 <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css">
 <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap-theme.min.css">
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
 <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js"></script>
-
+-->
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/semantic-ui/2.1.8/semantic.min.css">
 <style>
 * {
@@ -60,7 +79,7 @@ width: 80%;
     width: 20%;
     font-size: 1.5vw;
     float: right;
-	    background: yellow;
+        background: yellow;
         overflow: hidden
         position: relative;
         display: inline-block;
@@ -74,7 +93,7 @@ h1{
 h3{
     font-size: 2vw;
 }
-
+.data-point { stroke: black; opacity: 0.7; fill: red; }
 </style>
 </head>
 <body>
@@ -84,10 +103,10 @@ h3{
                     <h1> Showing imdb rated <span id="span1"></span> movies of  <span id="span2"></span> , for  <span id="span3"> </span>  </h1>
                 </div>
             </div>
+</div>
     <br>
     <div> 
-        <select id="select-el" onchange="handleGenreFilterSelection(this.value)" >
-            <option value="All">Filter by Genre</option>
+        <select id="genre-filter" multiple="multiple">
             <option id="action" value="Action">Action</option>
             <option id="adventure" value="Adventure">Adventure</option>
             <option id="animation" value="Animation">Animation</option>
@@ -98,8 +117,47 @@ h3{
             <option id="romance" value="Romance">Romance</option>
             <option id="thriller" value="Thriller">Thriller</option>
             <option id="documentary" value="Documentary">Documentary</option>
-    </select>
-</div>
+        </select>
+        <script>
+        //using jQuery to register listeners on all the options included in the genre filter
+        $(document).ready(function(){
+            $('#genre-filter').multiselect({
+                //nonSelectedText: 'Please select a genre..'
+                numberDisplayed: 10,
+                nonSelectedText: 'Please select a genre..',
+                onChange: function(option, checked, select){
+                    var genre = $(option).val();
+                    if(checked == true){
+                        checkedGenres.push(genre); 
+                    }
+                    else{
+                        var index = checkedGenres.indexOf(genre);
+                        if(index != -1){
+                            checkedGenres.splice(index, 1);
+                        }
+                    }
+                    var updated = updateDataPoints(checkedGenres, data);
+                    displayDataPoints(updated);
+                    if(checkedGenres.length == 1){
+                        chosenGenre = checkedGenres[0];
+                    }
+                    else{
+                        chosenGenre = "";
+                        checkedGenres.forEach(function(d, i){
+                            if(i != checkedGenres.length-1){
+                                chosenGenre += d+", ";
+                            }
+                            else{
+                                chosenGenre += d;
+                            }
+                        });
+                    }
+                    document.getElementById('span2').innerHTML="<font color='red'>"+chosenGenre +"</font>" +  " genres"; 
+                }
+            });
+        });
+        </script>
+    </div>
 
 
 <!-- <div id = "graph" class = "row">
@@ -125,6 +183,8 @@ h3{
             <input type="radio"  id="2011" value="2011" name = "year" onClick = "handleYearSelection(this.id)"> 2011
             <input  type="radio" id="2012" value="2012" name = "year" onClick = "handleYearSelection(this.id)"> 2012
             <input  type="radio"  id="2013" value="2013" name = "year" onClick = "handleYearSelection(this.id)"> 2013
+            <input  type="radio"  id="2014" value="2014" name = "year" onClick = "handleYearSelection(this.id)"> 2014
+            <input  type="radio"  id="2015" value="2015" name = "year" onClick = "handleYearSelection(this.id)"> 2015
         </div>
 
        
@@ -139,48 +199,54 @@ h3{
     </div>
 </div>
 <script>
-
-
-    var margin = { top: 20, bottom: 30, left: 40, right: 20 };
+    var margin = { top: 20, bottom: 30, left: 50, right: 20 };
     var width = 800 - margin.left - margin.right;
     var height = 400 - margin.top - margin.bottom;
     var padding = 70;
     var options = ["Action", "Adventure", "Animation", "Comedy", "Crime", "Drama", "Horror", "Romance", "Thriller", "Documentary"];
     var prev = "false";
-    var xScale = d3.scale.log().range([0, width]).nice();
-    var yScale = d3.scale.log().range([height, 0]).nice();
-    var colorScale = d3.scale.category10().domain(options);
+    var x = d3.scale.log().range([0, width]).nice();
+    var y = d3.scale.log().range([height, 0]).nice();
+    //var colorScale = d3.scale.category10().domain(options);
     //var colorScale = d3.scale.ordinal().domain(options).range("red","orange","blue","green", "brown", "pink", "purple","pale-green", "lightblue", "gray")
     var ratedOption = "top50";
-    var chosenGenre = "All";
+    var chosenGenres = "All";
     var chosenYear = "All";
-    var chosenRate = "Top-50"
-    var yearArray;
-    var result=[]; var xDomain; var yDomain;
-    var initialData;
-        var xAxis = d3.svg.axis().scale(xScale).orient("bottom").ticks(5).tickFormat(d3.format("s"));
-        var yAxis = d3.svg.axis().scale(yScale).orient("left").ticks(10).tickFormat(d3.format("s"));    
-    d3.csv("movie_budgets/movie_budget_all.csv", function(error, data){
-        if(error){
-            throw error;
-        }
-        data = data.filter(function(d) {return (d.imdbRating != "N/A" && d.imdbRating != "None");});
-        result = sortDataByRating(data);   
-        initialData = sortDataByRating(data);  
-        var ratedOption = "top50";
-        xDomain = d3.extent(initialData[ratedOption], function(d){ return parseInt(d.Budget.substr(1).replace(',', '')); })
-        yDomain = d3.extent(initialData[ratedOption], function(d){ return parseInt(d["Worldwide Gross"].substr(1).replace(',', '')); });
-                displayDataPoints(initialData[ratedOption]);
+    var chosenRate = "Top-50";
+    var checkedGenres = [];
+    //var yearArray;
+    //var result, xDomain, yDomain;
+    //var initialData;
+    var globalCounter = 0;
+    var data;
+    var xAxis = d3.svg.axis().scale(x).orient("bottom").ticks(5).tickFormat(d3.format("s"));
+    var yAxis = d3.svg.axis().scale(y).orient("left").ticks(10).tickFormat(d3.format("s"));
+    var sorted;
 
-
-    });
     var svg = d3.select("#scatter-plot")
         .attr("width", width+margin.left+margin.right)
         .attr("height", height+margin.top+margin.bottom)
         .append("g")
         .attr("transform", "translate("+margin.left+","+margin.top+")");
 
-    
+    d3.csv("../movie_budgets/movie_budget_all.csv", function(error, records){
+        if(error){
+            throw error;
+        }
+        //data = records.filter(function(d) {return (d.imdbRating != "N/A" && d.imdbRating != "None");});
+        data = records;
+        sorted = sortDataByRating(data);
+        var inputData = sorted[ratedOption];
+        displayDataPoints(inputData);
+
+    });
+
+    function updateDataPoints(checkedGenres, data){
+        var filtered = filterDataByGenre(checkedGenres, data);
+        sorted = sortDataByRating(filtered);
+        return sorted[ratedOption];
+    }
+
     function sortDataByRating(values){
         values.sort(function(a, b){
             return parseFloat(b.imdbRating) - parseFloat(a.imdbRating);
@@ -190,180 +256,155 @@ h3{
             && parseInt(d["Worldwide Gross"].substr(1).replace(',', '')) !=0; 
         });
         
-        return { top5: filtered.slice(0, 5), top15: filtered.slice(0, 15), top25: filtered.slice(0, 25), top50: filtered.slice(0, 50), top500: filtered.slice(0,values.length-1) };
+        return { top5: filtered.slice(0, 5), top15: filtered.slice(0, 15), top25: filtered.slice(0, 25), top50: filtered.slice(0, 50) };
     }
 
+    function displayDataPoints(updatedData){
 
+        d3.selectAll(".axis text").data([]).exit().remove();
+        d3.selectAll(".axis line").data([]).exit().remove();
 
-
-
-
-     function displayDataPoints(data){
-     
-     	document.getElementById("detail").innerHTML = "Click on the circle for more details";
-        d3.selectAll(".axis text").remove();
-        d3.selectAll(".axis line").remove();
-        d3.selectAll(".point").remove();
+        var currentDataPoints = d3.selectAll(".data-point");
+        var updatedTitles = updatedData.map(function(d){ return d.Title; });
+        var currTitles = currentDataPoints[0].map(function(d){ return d.__data__.Title; });
+        var overlappedTitles = currTitles.filter(function(d){ return updatedTitles.indexOf(d) != -1; });
+        var obsoleteTitles = currTitles.filter(function(d){ return updatedTitles.indexOf(d) == -1; });
+        
+        var obsoleteDataPoints = currentDataPoints.filter(function(d){ return obsoleteTitles.indexOf(d.Title) != -1; });
+        var overlappedDataPoints = currentDataPoints.filter(function(d){ return overlappedTitles.indexOf(d.Title) != -1; });
+        var addedData = updatedData.filter(function(d){ return currTitles.indexOf(d.Title) == -1; });
+        //create the scale for the size of the data points in the scatter plot
         var sizeScale = d3.scale.linear()
-                .domain(d3.extent(data, function(d){ return parseFloat(d.imdbRating); }))
-                .range([5, 18]);
+                .domain(d3.extent(updatedData, function(d){ return parseFloat(d.imdbRating); }))
+                .range([5, 10]);
+        //set the domain of the x and y axis
+        var xMin = d3.min(updatedData, function(d){ return parseInt(d.Budget.substr(1).replace(',', '')); });
+        var xMax = d3.max(updatedData, function(d){ return parseInt(d.Budget.substr(1).replace(',', '')); });
+        var yMin = d3.min(updatedData, function(d){ return parseInt(d["Worldwide Gross"].substr(1).replace(',', ''));});
+        var yMax = d3.max(updatedData, function(d){ return parseInt(d["Worldwide Gross"].substr(1).replace(',', ''));});
+        var incrementX = parseInt(xMin/5);
+        var incrementY = parseInt(yMin/5);
+        
+        x.domain([xMin-incrementX, xMax]);
+        
+        y.domain([yMin-incrementY, yMax]);
+        
+        svg.append("g")
+            .attr("class", "axis")
+            .attr("transform", "translate(0,"+height+")")
+            .call(xAxis)
+            .append("text")
+            .attr("class", "label")
+            .attr("x", width)
+            .attr("y", 30)
+            .style("text-anchor", "end")
+            .text("Budget($)");
 
+        svg.append("g")
+            .attr("class", "axis")
+            .call(yAxis)
+            .append("text")
+            .attr("class", "label")
+            .attr("transform", "rotate(-90)")
+            .attr("y", -36)
+            .style("text-anchor", "end")
+            .text("Worldwide Gross($)");
 
-        xDomain = d3.extent(data, function(d){ return parseInt(d.Budget.substr(1).replace(',', '')); })
-        yDomain = d3.extent(data, function(d){ return parseInt(d["Worldwide Gross"].substr(1).replace(',', '')); });
-
-        var incrementX = parseInt(xDomain[0]/5);
-        var incrementY = parseInt(yDomain[0]/5);
-
-        xScale.domain([xDomain[0]-incrementX, xDomain[1]]);
-        yScale.domain([yDomain[0]-incrementY, yDomain[1]]);
-
-            
-            svg.append("g")
-               .attr("class", "axis")
-               .attr("transform", "translate(0,"+height+")")
-               .call(xAxis)
-               .append("text")
-               .attr("class", "label")
-               .attr("x", width/2.5)
-               .attr("y", (padding/2.65))
-               .style("text-anchor", "middle")
-               .style("font-size", "14px")
-               .text("Budget($)");
-
-            svg.append("g")
-               .attr("class", "axis")
-               .call(yAxis)
-               .append("text")
-               .attr("class", "label")
-               .attr("transform", "rotate(-90)")
-               .attr("x", -width/3)
-               .attr("y", -padding/2.5)
-               .style("text-anchor", "middle")
-               .style("font-size", "14px")               
-               .text("Worldwide Gross($)");
-
-
-           
-            var dataPoints = svg.selectAll(".point")
-            .data(data)
+        globalCounter = globalCounter+1;
+        //create the starting point for the transition animation of newly-added data points
+        var newDataPoints = svg.append("g").attr("id", globalCounter).selectAll(".data-point").data(addedData)
             .enter()
             .append("circle")
-            .attr("class", "point")
-            .attr("r", function(d){  return sizeScale(parseFloat(d.imdbRating)); })
-            .attr("cx", xScale(xDomain[0] - incrementX))
-            .attr("cy", yScale(yDomain[0] - incrementY))
-            .style("fill", function(d) { 
+            .attr("class", "data-point")
+            .attr("r", function(d){ return sizeScale(parseFloat(d.imdbRating)); })
+            .attr("cx", x(xMin-incrementX))
+            .attr("cy", y(yMin-incrementY))
+            .on("click", function(d){  
+                if(prev != false){
+                    d3.select(prev).style("stroke", "black").style("stroke-width", "1px");
+                }
+                prev = this;
+                d3.select(this).style("stroke", "yellow").style("stroke-width", "5px");
 
-            if(chosenGenre == "All") {
-                return colorScale(((d.Genre).split(","))[0]);
-            }
-            else {
-                return colorScale(chosenGenre);
-            }
-  } )
-            .style("stroke", "black")
-            .style("opacity", 0.9)
-            .on("click", function(d) {  
-			if(prev != false)
-			{
-				d3.select(prev).style("stroke", "black").style("stroke-width", "1px");
-			}
-						prev = this;
-            			d3.select(this).style("stroke", "yellow").style("stroke-width", "5px");
-
-            	document.getElementById("detail").innerHTML = "<strong>Movie Title:</strong> <span style='color:blue'>" + d.Title +"</span> <br>" + "<strong>Genre:</strong> <span style='color:blue'>" + d.Genre + "</span> <br>"
+                document.getElementById("detail").innerHTML = "<strong>Movie Title:</strong> <span style='color:blue'>" + d.Title +"</span> <br>" + "<strong>Genre:</strong> <span style='color:blue'>" + d.Genre + "</span> <br>"
                 + "<strong>Release Date:</strong> <span style='color:blue'>" + d["Release Date"] + "</span> <br>"
-            	+ "<strong>Budget:</strong> <span style='color:blue'>" + d.Budget + "</span> <br>"
-            	+ "<strong>Worldwide Gross:</strong> <span style='color:blue'>" + d["Worldwide Gross"] + "</span> <br>"
-            	+ "<strong>IMDb Rating:</strong> <span style='color:blue'>" + d.imdbRating + "</span> <br>"
-            	+ "<strong>Awards:</strong> <span style='color:blue'>" + d.Awards + "</span> <br>"
-            	; });
+                + "<strong>Budget:</strong> <span style='color:blue'>" + d.Budget + "</span> <br>"
+                + "<strong>Worldwide Gross:</strong> <span style='color:blue'>" + d["Worldwide Gross"] + "</span> <br>"
+                + "<strong>IMDb Rating:</strong> <span style='color:blue'>" + d.imdbRating + "</span> <br>"
+                + "<strong>Awards:</strong> <span style='color:blue'>" + d.Awards + "</span> <br>"
+                ; 
+            });
+        
+        
+        if(currTitles.length != 0 ){
+            var selector = "g[id='"+(globalCounter-1)+"']";
+        
+            obsoleteDataPoints
+            .transition()
+            .duration(1000)
+            .attr("cx", x(xMin-incrementX))
+            .attr("cy", y(yMin-incrementY))
+            .remove();
+            
+            overlappedDataPoints
+            .transition()
+            .duration(1000)
+            .attr("cx", function(d){ 
+                return x(parseInt(d.Budget.substr(1).replace(',', ''))); 
+            })
+            .attr("cy", function(d){ 
+                return y(parseInt(d["Worldwide Gross"].substr(1).replace(',', ''))); 
+            });
 
-             dataPoints.transition()
+        }
+
+        newDataPoints.transition()
         .duration(1000)
-        .attr("cx", function(d){ return xScale(parseInt(d.Budget.substr(1).replace(',', ''))); })
-        .attr("cy", function(d){ return yScale(parseInt(d["Worldwide Gross"].substr(1).replace(',', ''))); });
-
-
+        .attr("cx", function(d){ return x(parseInt(d.Budget.substr(1).replace(',', ''))); })
+        .attr("cy", function(d){ return y(parseInt(d["Worldwide Gross"].substr(1).replace(',', ''))); });
+            
     }
 
-  
-
-    function filterDataByGenre(genre, data){
+    function filterDataByGenre(genres, data){ 
+        var num = genres.length;  
         return data.filter(function(d){
-            var temp = (d.Genre).split(",");
-            for(var i = 0; i < temp.length; i++) {
-                temp[i]= (temp[i]).trim();
-            }
-            return temp.includes(genre);
+            var counter = 0;
+            var tokens = d["Genre"].replace(/\s+/g, '').split(",");
+            genres.forEach(function(g){
+                if(tokens.indexOf(g) != -1){
+                    counter++;
+                }
+            });
+            return counter == num;
         });
     }
-
-    function handleGenreFilterSelection(genre){
-        chosenGenre = genre;
-        document.getElementById('span2').innerHTML="<font color='red'>"+chosenGenre +"</font>" +  " genre";
-
-        if(chosenYear != "All") {
-            if(chosenGenre == "All") {
-            svg.selectAll(".point").data([]).exit().remove();
-
-                 displayDataPoints(initialData[ratedOption]);  
-            return;
-            }
-            var filteredData = filterDataByGenre(genre, yearArray);
-            var sData = sortDataByRating(filteredData);
-            svg.selectAll(".point").data([]).exit().remove();
-
-        displayDataPoints(sData[ratedOption])
-            return;
-        }
-        var inputData = initialData["top500"];
-    
-        if(genre == "All") {
-                    svg.selectAll(".point").data([]).exit().remove();
-
-            displayDataPoints(initialData[ratedOption]);  
-            return;
-        }
-
-        var filteredData = filterDataByGenre(genre, inputData);
-        var sortedData = sortDataByRating(filteredData);
-            svg.selectAll(".point").data([]).exit().remove();
-
-        displayDataPoints(sortedData[ratedOption]);      
-    }
-
 
     function handleYearSelection(value){
         console.log(value);
         chosenYear = value;
                 document.getElementById('span3').innerHTML="<font color='red'>"+chosenYear +"</font>"+ " Year";
 
-        var path = "movie_budgets/movie_budget_" + value + ".csv";
-        d3.csv(path, function(error, data){
+        var path = "../movie_budgets/movie_budget_" + value + ".csv";
+        d3.csv(path, function(error, records){
             if(error){
                 throw error;
             }
-            data = data.filter(function(d) {return (d.imdbRating != "N/A" && d.imdbRating != "None");});
+            //data = data.filter(function(d) {return (d.imdbRating != "N/A" && d.imdbRating != "None");});
+            data = records;
+            var inputData;
+            svg.selectAll(".data-point").data([]).exit().remove();
 
-           var yearData = sortDataByRating(data);
-           yearArray = data;
-            var yData = yearData[ratedOption];
-            svg.selectAll(".point").data([]).exit().remove();
-
-            if(chosenGenre=="All"){
-
-                displayDataPoints(yData);
-                return; 
-
+            if(checkedGenres.length != 0){
+                var filtered = filterDataByGenre(checkedGenres, data);
+                sorted = sortDataByRating(filtered);
+                inputData = sorted[ratedOption];
             }
-            yData = yearData["top500"];
-            yearArray = yData;
-            yData = filterDataByGenre(chosenGenre, yData);
-            yData = sortDataByRating(yData);
-            yData = yData[ratedOption];
-            displayDataPoints(yData); 
+            else{
+                sorted = sortDataByRating(data);
+                inputData = sorted[ratedOption];
+            }
+
+            displayDataPoints(inputData); 
         });
     }
 
@@ -371,7 +412,12 @@ h3{
         ratedOption = id;
         chosenRate = value;
         document.getElementById('span1').innerHTML="<font color='red'>" + chosenRate + "</font>";
-        handleGenreFilterSelection(chosenGenre);
+        //handleGenreFilterSelection(chosenGenre);
+        svg.selectAll(".data-point").data([]).exit().remove();
+
+        var inputData = sorted[ratedOption];
+
+        displayDataPoints(inputData); 
 
     }
 
@@ -379,8 +425,8 @@ document.getElementById('span3').innerHTML="<font color='red'>"+"all" + "</font>
 document.getElementById('span2').innerHTML="<font color='red'>"+"all" + "</font>" + " genres";
 document.getElementById('span1').innerHTML="<font color='red'>" + chosenRate + "</font>";
 
-document.getElementById("label").innerHTML= options[0] + colorScale(0);
+//document.getElementById("label").innerHTML= options[0] + colorScale(0);
 
 </script>
-<!-- </body>
-</html> -->
+</body>
+</html>
