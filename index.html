@@ -106,7 +106,7 @@ h3{
 </div>
     <br>
     <div> 
-        <select id="genre-filter" multiple="multiple">
+        <select id="genre-filter" onchange="handleGenreFilterSelection(this.value)">
             <option id="action" value="Action">Action</option>
             <option id="adventure" value="Adventure">Adventure</option>
             <option id="animation" value="Animation">Animation</option>
@@ -118,45 +118,6 @@ h3{
             <option id="thriller" value="Thriller">Thriller</option>
             <option id="documentary" value="Documentary">Documentary</option>
         </select>
-        <script>
-        //using jQuery to register listeners on all the options included in the genre filter
-        $(document).ready(function(){
-            $('#genre-filter').multiselect({
-                //nonSelectedText: 'Please select a genre..'
-                numberDisplayed: 10,
-                nonSelectedText: 'Please select a genre..',
-                onChange: function(option, checked, select){
-                    var genre = $(option).val();
-                    if(checked == true){
-                        checkedGenres.push(genre); 
-                    }
-                    else{
-                        var index = checkedGenres.indexOf(genre);
-                        if(index != -1){
-                            checkedGenres.splice(index, 1);
-                        }
-                    }
-                    var updated = updateDataPoints(checkedGenres, data);
-                    displayDataPoints(updated);
-                    if(checkedGenres.length == 1){
-                        chosenGenre = checkedGenres[0];
-                    }
-                    else{
-                        chosenGenre = "";
-                        checkedGenres.forEach(function(d, i){
-                            if(i != checkedGenres.length-1){
-                                chosenGenre += d+", ";
-                            }
-                            else{
-                                chosenGenre += d;
-                            }
-                        });
-                    }
-                    document.getElementById('span2').innerHTML="<font color='red'>"+chosenGenre +"</font>" +  " genres"; 
-                }
-            });
-        });
-        </script>
     </div>
 
 
@@ -207,10 +168,10 @@ h3{
     var prev = "false";
     var x = d3.scale.log().range([0, width]).nice();
     var y = d3.scale.log().range([height, 0]).nice();
-    //var colorScale = d3.scale.category10().domain(options);
+    var colorScale = d3.scale.category10().domain(options);
     //var colorScale = d3.scale.ordinal().domain(options).range("red","orange","blue","green", "brown", "pink", "purple","pale-green", "lightblue", "gray")
     var ratedOption = "top50";
-    var chosenGenres = "All";
+    var chosenGenre = "All";
     var chosenYear = "All";
     var chosenRate = "Top-50";
     var checkedGenres = [];
@@ -233,19 +194,19 @@ h3{
         if(error){
             throw error;
         }
-        //data = records.filter(function(d) {return (d.imdbRating != "N/A" && d.imdbRating != "None");});
         data = records;
         sorted = sortDataByRating(data);
         var inputData = sorted[ratedOption];
         displayDataPoints(inputData);
 
     });
-
+    /*
     function updateDataPoints(checkedGenres, data){
         var filtered = filterDataByGenre(checkedGenres, data);
         sorted = sortDataByRating(filtered);
         return sorted[ratedOption];
     }
+    */
 
     function sortDataByRating(values){
         values.sort(function(a, b){
@@ -319,6 +280,14 @@ h3{
             .attr("r", function(d){ return sizeScale(parseFloat(d.imdbRating)); })
             .attr("cx", x(xMin-incrementX))
             .attr("cy", y(yMin-incrementY))
+            .style("fill", function(d) { 
+                if(chosenGenre == "All") {
+                    return colorScale(((d.Genre).split(","))[0]);
+                }
+                else {
+                    return colorScale(chosenGenre);
+                }
+            })
             .on("click", function(d){  
                 if(prev != false){
                     d3.select(prev).style("stroke", "black").style("stroke-width", "1px");
@@ -354,7 +323,8 @@ h3{
             })
             .attr("cy", function(d){ 
                 return y(parseInt(d["Worldwide Gross"].substr(1).replace(',', ''))); 
-            });
+            })
+            .style("fill", colorScale(chosenGenre));
 
         }
 
@@ -362,20 +332,18 @@ h3{
         .duration(1000)
         .attr("cx", function(d){ return x(parseInt(d.Budget.substr(1).replace(',', ''))); })
         .attr("cy", function(d){ return y(parseInt(d["Worldwide Gross"].substr(1).replace(',', ''))); });
+        
+        if(currTitles.length != 0){
+            newDataPoints.style("fill", colorScale(chosenGenre));
+        }
+
             
     }
 
-    function filterDataByGenre(genres, data){ 
-        var num = genres.length;  
+    function filterDataByGenre(genre, data){
         return data.filter(function(d){
-            var counter = 0;
             var tokens = d["Genre"].replace(/\s+/g, '').split(",");
-            genres.forEach(function(g){
-                if(tokens.indexOf(g) != -1){
-                    counter++;
-                }
-            });
-            return counter == num;
+            return tokens.indexOf(genre) != -1;
         });
     }
 
@@ -413,14 +381,23 @@ h3{
         chosenRate = value;
         document.getElementById('span1').innerHTML="<font color='red'>" + chosenRate + "</font>";
         //handleGenreFilterSelection(chosenGenre);
-        svg.selectAll(".data-point").data([]).exit().remove();
+        //svg.selectAll(".data-point").data([]).exit().remove();
 
         var inputData = sorted[ratedOption];
 
         displayDataPoints(inputData); 
 
     }
-
+    
+    function handleGenreFilterSelection(genre){
+        chosenGenre = genre;
+        document.getElementById('span2').innerHTML="<font color='red'>"+chosenGenre +"</font>" +  " genre";
+        //svg.selectAll(".data-point").data([]).exit().remove();
+        var filtered = filterDataByGenre(genre, data);
+        var sorted = sortDataByRating(filtered);
+        var inputData = sorted[ratedOption];
+        displayDataPoints(inputData);      
+    }
 document.getElementById('span3').innerHTML="<font color='red'>"+"all" + "</font>" + " years";
 document.getElementById('span2').innerHTML="<font color='red'>"+"all" + "</font>" + " genres";
 document.getElementById('span1').innerHTML="<font color='red'>" + chosenRate + "</font>";
