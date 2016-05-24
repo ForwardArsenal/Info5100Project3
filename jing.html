@@ -1,14 +1,12 @@
 <!DOCTYPE html>
 <meta charset="utf-8">
-
 <style>
-
 
 body {
   font: 10px sans-serif;
   position: relative;
-}
 
+}
 .axis path,
 .axis line {
   fill: none;
@@ -34,7 +32,6 @@ body {
     font-size: 16px;
     cursor: pointer;
     float: left;
-
 }
 
 
@@ -42,17 +39,19 @@ body {
 
 
 
-<body>		
+	
 	
 	<h1>A Decreasing Trend in Return Rate</h1></div>	
 	<div id ="buttons"  style="width: 550px; margin: auto">
-	<button class="button" onclick="logRate()" style="float: right;">Log Rate</button>
+	<button class="button" onclick="logRate()" style="float: right;" >Log Rate</button>
 	<button class="button" onclick="rate()"  style="float: right;">Raw Rate</button>
-	
 	</div>
-	<div id ="lineChart"> </div>
-</body>		
+		
+<div id ="lineChart"> </div>
+
+	
 <script src="//d3js.org/d3.v3.min.js"></script>
+
 
 <script>
 // code source: https://bl.ocks.org/mbostock/3883245
@@ -61,7 +60,6 @@ body {
 	var margin = {top: 20, right: 20, bottom: 30, left: 50},
     	width = 960 - margin.left - margin.right,
    	 	height = 500 - margin.top - margin.bottom;
-
 
 	var xScale = d3.scale.linear()
     .range([0, width]);
@@ -78,11 +76,13 @@ body {
     	.scale(yScale)
     	.orient("left");
 
-	var svg = d3.select("#lineChart").append("svg")
-    		.attr("width", width + margin.left + margin.right)
-    		.attr("height", height + margin.top + margin.bottom)
+	var svg2 = d3.select("#lineChart").append("svg")
+		.attr("viewBox", '0 0 1200 800')
+ 	   	.attr("preserveAspectRatio", "xMinYMin meet")
+		.classed("svg-content", true)
   		.append("g")
-    		.attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+    	.attr("transform", "translate(" + margin.left + "," + margin.top + ")")
+		;
 	
 	//helper function 
 	function linearRegression(y,x){
@@ -125,7 +125,7 @@ body {
 	
 	
 	//draw x axis
-  	svg.append("g")
+  	svg2.append("g")
       .attr("class", "x axis")	
       .attr("transform", "translate(0," + height + ")")
 		.call(xAxis);
@@ -134,7 +134,7 @@ body {
 	var formatxAxis = d3.format('s'); 
 
 	//draw y axis 
-  	svg.append("g")
+  	svg2.append("g")
       .attr("class", "y axis")
       .call(yAxis)
       .append("text")
@@ -145,7 +145,7 @@ body {
       .text("Return Rate");
 	
 	//draw the path
-  	svg.append("path")
+  	svg2.append("path")
     	.attr("class", "line")
 	  	.attr("d", valueLine(data));
 			
@@ -171,12 +171,12 @@ body {
 				
 
 	//draw the path
-	svg.append("path")
+	svg2.append("path")
 		.attr("class", "line")
   		.attr("d", regressionLine(trendData))
 		.attr("id", "regressionLine")
 		.style("stroke-dasharray", ("20, 3"))
-		.style("stroke", "#b2df8a")	
+		.style("stroke", "#b2df8a")//green color
 		.style("stroke-width", "7")
 		.style("opacity", "0.5");
 	});
@@ -219,20 +219,20 @@ body {
 		var trendData = [{"x": x1, "y": y1}, {"x": x2, "y": y2}];
 
 	// Select the section we want to apply our changes to
-		var svg = d3.select("#lineChart").transition();
+		var svg2 = d3.select("#lineChart").transition();
 
 	// Make the changes
-	svg.select(".line")   // change the line
+	svg2.select(".line")   // change the line
 			.duration(750)
 			.attr("d", valueLine2(data));
-	svg.select("#regressionLine") //change the regression line
+	svg2.select("#regressionLine") //change the regression line
 			.duration(750)
 			.attr("d", regressionLine2(trendData))
 			.attr("id", "regressionLine2");
-	svg.select(".x.axis") // change the x axis
+	svg2.select(".x.axis") // change the x axis
 			.duration(750)
 			.call(xAxis);
-	svg.select(".y.axis") // change the y axis
+	svg2.select(".y.axis") // change the y axis
 			.duration(750)
 			.call(yAxis);
 
@@ -299,3 +299,4 @@ body {
 
 
 </script>
+
