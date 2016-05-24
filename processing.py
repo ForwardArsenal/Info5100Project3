@@ -11,7 +11,7 @@ from multiprocessing import Pool, Manager
 
 #page = urllib2.urlopen(url)
 data = list()
-titles = list()
+#titles = list()
 newData = list()
 manager = Manager()
 movieMap = manager.dict()
@@ -42,7 +42,7 @@ def generateCSVData(year):
         tmpArr.append(domestic_gross)
         tmpArr.append(worldwide_gross)
         
-        titles.append(title)
+        #titles.append(title)
         tmpTitles.append(title)
         data.append(tmpArr)
 
@@ -60,13 +60,13 @@ def apiCall(title):
         print(respDict["Error"])
         for field in extra_fields:
             tmpArr.append("None")
-        print("Success!")
     else:
         for field in extra_fields:
             tmpArr.append(respDict[field].encode("utf-8"))
     movieMap[title] = tmpArr
 
 def writeToCSV(year):
+    #perform data join between info from the html table and the info returned from the api call
     for record in data:
         title = record[0]
         extraInfo = movieMap[title]
@@ -106,14 +106,16 @@ if __name__ == '__main__':
     soup = BeautifulSoup(input)
 
     table = soup.find("table", { "id": "budgets" })
+    #generate csv file for each year respectively
     '''
     for year in range(2010, 2016):
-        generateCSVData(year)
-        print("The length of titles list is "+str(len(titles)))
-        p = Pool(len(titles))
-        p.map(apiCall, titles)
+        tmpTitles = generateCSVData(year)
+        print("The length of titles list is "+str(len(tmpTitles)))
+        p = Pool(len(tmpTitles))
+        p.map(apiCall, tmpTitles)
         writeToCSV(year)
     '''
+    #generate one csv file containing all the movie records
     generateAll()
     print(genres)
 

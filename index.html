@@ -169,15 +169,10 @@ h3{
     var x = d3.scale.log().range([0, width]).nice();
     var y = d3.scale.log().range([height, 0]).nice();
     var colorScale = d3.scale.category10().domain(options);
-    //var colorScale = d3.scale.ordinal().domain(options).range("red","orange","blue","green", "brown", "pink", "purple","pale-green", "lightblue", "gray")
     var ratedOption = "top50";
     var chosenGenre = "All";
     var chosenYear = "All";
     var chosenRate = "Top-50";
-    var checkedGenres = [];
-    //var yearArray;
-    //var result, xDomain, yDomain;
-    //var initialData;
     var globalCounter = 0;
     var data;
     var xAxis = d3.svg.axis().scale(x).orient("bottom").ticks(5).tickFormat(d3.format("s"));
@@ -189,7 +184,7 @@ h3{
         .attr("height", height+margin.top+margin.bottom)
         .append("g")
         .attr("transform", "translate("+margin.left+","+margin.top+")");
-
+    //load the default content of the scatter plot
     d3.csv("../movie_budgets/movie_budget_all.csv", function(error, records){
         if(error){
             throw error;
@@ -200,14 +195,7 @@ h3{
         displayDataPoints(inputData);
 
     });
-    /*
-    function updateDataPoints(checkedGenres, data){
-        var filtered = filterDataByGenre(checkedGenres, data);
-        sorted = sortDataByRating(filtered);
-        return sorted[ratedOption];
-    }
-    */
-
+    
     function sortDataByRating(values){
         values.sort(function(a, b){
             return parseFloat(b.imdbRating) - parseFloat(a.imdbRating);
@@ -357,7 +345,6 @@ h3{
             if(error){
                 throw error;
             }
-            //data = data.filter(function(d) {return (d.imdbRating != "N/A" && d.imdbRating != "None");});
             data = records;
             var inputData;
             svg.selectAll(".data-point").data([]).exit().remove();
@@ -380,19 +367,13 @@ h3{
         ratedOption = id;
         chosenRate = value;
         document.getElementById('span1').innerHTML="<font color='red'>" + chosenRate + "</font>";
-        //handleGenreFilterSelection(chosenGenre);
-        //svg.selectAll(".data-point").data([]).exit().remove();
-
         var inputData = sorted[ratedOption];
-
         displayDataPoints(inputData); 
-
     }
     
     function handleGenreFilterSelection(genre){
         chosenGenre = genre;
         document.getElementById('span2').innerHTML="<font color='red'>"+chosenGenre +"</font>" +  " genre";
-        //svg.selectAll(".data-point").data([]).exit().remove();
         var filtered = filterDataByGenre(genre, data);
         var sorted = sortDataByRating(filtered);
         var inputData = sorted[ratedOption];
