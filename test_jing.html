@@ -39,11 +39,11 @@
   visibility: hidden;
 }
 
-.axis text{
+.v2_axis text{
         font-size: 6pt;
     }
-    .axis line { stroke: green; }
-    .axis path { stroke: blue; fill: none; stroke-width: 2px; }
+    .v2_axis line { stroke: green; }
+    .v2_axis path { stroke: #A0A0A0; fill: none; stroke-width: 2px; }
   /*  .data-point { fill: red; opacity: 0.5; }
     .new-data-point { fill: blue; opacity: 0.5; }*/
 /*#graph{
@@ -117,7 +117,7 @@ body {
                 <div class="col-xs-12">
 
                     <h1>A Decreasing Trend in Return Rate</h1></div> 
-					<p>  need to refresh your window a few times to see all axis labels.</p>
+					
                 </div>   
             </div>
             <div class="row">
@@ -135,7 +135,7 @@ body {
 
             <div class="row">
                 <div class="col-xs-12">
-                    <h1> Showing imdb rated <span id="span1"></span> movies of  <span id="span2"></span> , for  <span id="span3"> </span>  </h1>
+                    <h1> Return Rate of imdb  <span id="span1"></span> Rated Movies of  <span id="span2"></span> , for  <span id="span3"> </span>  </h1>
                 </div>
             </div>
     <br>
@@ -268,22 +268,26 @@ var margin_1 = {top: 20, right: 20, bottom: 30, left: 50},
     svg1.append("g")
       .attr("class", "x axis")  
       .attr("transform", "translate(0," + height_1 + ")")
-        .call(xAxis_1);
+      .call(xAxis_1);
+	   
       
     //format x ticks 
     var formatxAxis = d3.format('s'); 
-
+	
+	
     //draw y axis 
     svg1.append("g")
       .attr("class", "y axis")
-      .call(yAxis_1)
-      .append("text")
+	   .call(yAxis_1);
+    
+	//add name of y axis
+	svg1.append("text")
       .attr("transform", "rotate(-90)")
       .attr("y", 6)
       .attr("dy", ".71em")
       .style("text-anchor", "end")
       .text("Return Rate");
-    
+	  
     //draw the path
     svg1.append("path")
         .attr("class", "line")
@@ -549,8 +553,8 @@ var margin_1 = {top: 20, right: 20, bottom: 30, left: 50},
      function displayDataPoints(data){
      
      	document.getElementById("detail").innerHTML = "Click on the circle for more details";
-        d3.selectAll(".axis text").remove();
-        d3.selectAll(".axis line").remove();
+        d3.selectAll(".v2_axis text").remove();
+        d3.selectAll(".v2_axis line").remove();
         d3.selectAll(".point").remove();
 
  var currentDataPoints = d3.selectAll(".data-point");
@@ -580,7 +584,7 @@ var margin_1 = {top: 20, right: 20, bottom: 30, left: 50},
 
             
             svg.append("g")
-               .attr("class", "axis")
+               .attr("class", "v2_axis")
                .attr("transform", "translate(0,"+height_2+")")
                .call(xAxis_2)
                .append("text")
@@ -592,7 +596,7 @@ var margin_1 = {top: 20, right: 20, bottom: 30, left: 50},
                .text("Budget($)");
 
             svg.append("g")
-               .attr("class", "axis")
+               .attr("class", "v2_axis")
                .call(yAxis_2)
                .append("text")
                .attr("class", "label")
