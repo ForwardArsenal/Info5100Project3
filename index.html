@@ -464,7 +464,7 @@ var margin_1 = {top: 20, right: 20, bottom: 30, left: 50},
     var xAxis_2 = d3.svg.axis().scale(xScale_2).orient("bottom").ticks(5).tickFormat(d3.format("s"));
     var yAxis_2 = d3.svg.axis().scale(yScale_2).orient("left").ticks(10).tickFormat(d3.format("s"));    
 
-    d3.csv("/movie_budgets/movie_budget_all.csv", function(error, records){
+    d3.csv("movie_budgets/movie_budget_all.csv", function(error, records){
         if(error){
             throw error;
         }
@@ -706,7 +706,7 @@ var margin_1 = {top: 20, right: 20, bottom: 30, left: 50},
         chosenYear = year;
                 document.getElementById('span3').innerHTML="<font color='red'>"+chosenYear +"</font>"+ " Year";
 
-        var path = "/movie_budgets/movie_budget_" + year + ".csv";
+        var path = "movie_budgets/movie_budget_" + year + ".csv";
         d3.csv(path, function(error, records){
             if(error){
                 throw error;
