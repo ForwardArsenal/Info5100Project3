@@ -138,26 +138,6 @@ body {
                 </div>
             </div>
     <br>
-    <!--
-    <div class="dropdown">
-        <button class="btn btn-default dropdown-toggle" type="button" id="select-el" data-toggle="dropdown" aria-haspopup="true" aria-expanded="true">
-        Filter by Genre...
-            <span class="caret"></span>
-        </button>
-        <ul class="dropdown-menu" aria-labelledby="dropdownMenu1">
-            <li><a>Action</a></li>
-            <li><a href="#">Adventure</a></li>
-            <li><a href="#">Animation</a></li>
-            <li><a href="#">Comedy</a></li>
-            <li><a href="#">Crime</a></li>
-            <li><a href="#">Drama</a></li>
-            <li><a href="#">Horror</a></li>
-            <li><a href="#">Romance</a></li>
-            <li><a href="#">Thriller</a></li>
-            <li><a href="#">Documentary</a></li>
-        </ul>
-    </div>
-    -->
     <div> 
         <select id="select-el" onchange="handleGenreFilterSelection(this.value)" >
             <option value="All">Filter by Genre</option>
@@ -173,20 +153,6 @@ body {
             <option id="documentary" value="Documentary">Documentary</option>
         </select>
     </div>
-    <script>
-        $(document).ready(function(){
-            $("#select-el").dropdown('toggle');
-            $('.dropdown').on('show.bs.dropdown', function(event){
-                // do something…
-                console.log("Arsenal");
-                handleGenreFilterSelection($(event.relatedTarget).text());
-            });
-        });
-    </script>
-
-<!-- <div id = "graph" class = "row">
-
- -->    <!-- <div id="scatter-plot" class="scatter-plot"></div> -->
  <div class="row">
                 <div class="col-xs-12">
     <svg id="scatter-plot" viewBox="0 0 800 400" preserveAspectRatio="xMidYMid" style="display:inline-block;"> </svg>

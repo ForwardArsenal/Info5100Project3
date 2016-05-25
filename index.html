@@ -185,7 +185,7 @@ h3{
         .append("g")
         .attr("transform", "translate("+margin.left+","+margin.top+")");
     //load the default content of the scatter plot
-    d3.csv("../movie_budgets/movie_budget_all.csv", function(error, records){
+    d3.csv("/movie_budgets/movie_budget_all.csv", function(error, records){
         if(error){
             throw error;
         }
@@ -340,7 +340,7 @@ h3{
         chosenYear = value;
                 document.getElementById('span3').innerHTML="<font color='red'>"+chosenYear +"</font>"+ " Year";
 
-        var path = "../movie_budgets/movie_budget_" + value + ".csv";
+        var path = "/movie_budgets/movie_budget_" + value + ".csv";
         d3.csv(path, function(error, records){
             if(error){
                 throw error;
@@ -372,6 +372,7 @@ h3{
     }
     
     function handleGenreFilterSelection(genre){
+        console.log("Arsenal!");
         chosenGenre = genre;
         document.getElementById('span2').innerHTML="<font color='red'>"+chosenGenre +"</font>" +  " genre";
         var filtered = filterDataByGenre(genre, data);
